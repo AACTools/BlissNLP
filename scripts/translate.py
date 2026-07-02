@@ -34,6 +34,7 @@ LEXICON_PATH = os.path.join(PROC_DIR, "bliss_lexicon.json")
 INDEX_PATH = os.path.join(PROC_DIR, "lemma_index.json")
 UNICODE_MAP_PATH = os.path.join(PROC_DIR, "bliss_unicode_map.json")
 WSD_PATH = os.path.join(LEXICON_DIR, "disambiguation_rules.json")
+NEOLOGISMS_PATH = os.path.join(LEXICON_DIR, "neologisms.json")
 OUT_PATH = os.path.join(PROC_DIR, "alice_translated.jsonl")
 
 # Verified BCI ids for grammatical indicators (from BCI-AV 2025-02-15).
@@ -60,13 +61,11 @@ def render(bci_id: str) -> str:
     return _UNICODE_MAP.get(bci_id, f"[{bci_id}]")
 
 
-# Descriptive neologisms for Alice proper nouns (lemma -> concept component ids).
-# NOTE: 'dream' is not in BCI-AV; pending a curated concept (T-402).
-PROPER_NOUN_NEologISMS = {
-    "alice": ["14439"],          # girl
-    "hatter": ["14682"],         # hat (TODO: man + crazy + hat)
-    "gryphon": ["12840"],        # waterbird (approx)
-    "rabbit": ["16448"],         # rabbit
+# Proper-noun neologism registry: lemma -> {components, gloss, note}.
+# Loaded from data/lexicon/neologisms.json in main(); the default below is a
+# minimal fallback used when the file is absent (e.g. in unit tests).
+_PROPER_NOUN_NEologISMS: dict[str, dict] = {
+    "alice": {"components": ["14439"], "gloss": "the dreaming girl"},
 }
 
 
@@ -158,8 +157,10 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
                 "bci_id": None, "review": False, "role": "function"}
 
     # Proper nouns -> semantic neologism.
-    if pos == "PROPN" and lemma in PROPER_NOUN_NEologISMS:
-        uni, gloss = assemble_neologism(PROPER_NOUN_NEologISMS[lemma], lexicon)
+    entry = _PROPER_NOUN_NEologISMS.get(lemma)
+    if pos == "PROPN" and entry:
+        uni, comp_gloss = assemble_neologism(entry["components"], lexicon)
+        gloss = f"[{entry.get('gloss', lemma)}] {comp_gloss}"
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                 "type": "Compound", "unicode": uni, "gloss": gloss,
                 "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
@@ -222,6 +223,7 @@ def _assemble(base_id, gloss, pos, tok, meta) -> dict:
 
 
 def main() -> None:
+    global _PROPER_NOUN_NEologISMS
     for required in (PARSED_PATH, LEXICON_PATH, INDEX_PATH):
         if not os.path.exists(required):
             raise SystemExit(
@@ -232,8 +234,13 @@ def main() -> None:
     index = load_json(INDEX_PATH)
     wsd_rules = load_wsd(WSD_PATH)
     umap = load_unicode_map()
+    if os.path.exists(NEOLOGISMS_PATH):
+        neo = load_json(NEOLOGISMS_PATH)
+        neo.pop("_meta", None)
+        _PROPER_NOUN_NEologISMS = neo
     if wsd_rules:
         print(f"Loaded WSD rules for: {list(wsd_rules.keys())}")
+    print(f"Loaded neologism registry: {len(_PROPER_NOUN_NEologISMS)} proper nouns")
     print(f"Unicode map: {len(umap)} glyphs (from BlissFont)")
 
     total = 0
