@@ -4,72 +4,107 @@
     "schema_version": 1
   },
   "alice": {
-    "components": ["14439"],
+    "components": [
+      "14439"
+    ],
     "gloss": "the dreaming girl",
     "note": "BCI-AV has no 'dream' glyph; pending a curated concept or transliteration (T-403)"
   },
   "rabbit": {
-    "components": ["16448"],
+    "components": [
+      "16448"
+    ],
     "gloss": "White Rabbit",
     "note": "optionally prepend 'white' (18242) when the chapter context warrants"
   },
   "hatter": {
-    "components": ["15416", "29558", "14682"],
+    "components": [
+      "15416",
+      "29558",
+      "14682"
+    ],
     "gloss": "the mad hatter",
     "note": "man + crazy + hat"
   },
   "gryphon": {
-    "components": ["12378"],
+    "components": [
+      "12378"
+    ],
     "gloss": "the gryphon (legendary creature)",
     "note": "approximate: animal; eagle+lion composite pending"
   },
   "duchess": {
-    "components": ["18269", "22618"],
+    "components": [
+      "18269",
+      "22618"
+    ],
     "gloss": "the duchess",
     "note": "woman + crown"
   },
   "cat": {
-    "components": ["12383", "17021"],
+    "components": [
+      "12383",
+      "17021"
+    ],
     "gloss": "the cheshire cat",
     "note": "cat + smile"
   },
   "turtle": {
-    "components": ["17959"],
+    "components": [
+      "17959"
+    ],
     "gloss": "the mock turtle",
     "note": "turtle; 'mock' modifier pending"
   },
   "caterpillar": {
-    "components": ["13132"],
+    "components": [
+      "13132"
+    ],
     "gloss": "the caterpillar",
     "note": "direct concept"
   },
   "dinah": {
-    "components": ["12383"],
+    "components": [
+      "12383"
+    ],
     "gloss": "dinah (alice's cat)",
     "note": "cat"
   },
   "knave": {
-    "components": ["15416", "14695"],
+    "components": [
+      "15416",
+      "14695"
+    ],
     "gloss": "the knave of hearts",
     "note": "man + heart"
   },
   "queen": {
-    "components": ["23626", "14695"],
+    "components": [
+      "23626",
+      "14695"
+    ],
     "gloss": "the queen of hearts",
     "note": "queen + heart"
   },
   "king": {
-    "components": ["23559", "14695"],
+    "components": [
+      "23559",
+      "14695"
+    ],
     "gloss": "the king of hearts",
     "note": "king + heart"
   },
   "mary": {
-    "components": ["18269"],
+    "components": [
+      "18269"
+    ],
     "gloss": "mary ann",
     "note": "woman; the white rabbit's housekeeper"
   },
   "bill": {
-    "components": ["12388"],
+    "components": [
+      "12388"
+    ],
     "gloss": "bill the lizard",
     "note": "lizard"
   }

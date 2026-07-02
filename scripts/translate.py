@@ -35,10 +35,12 @@ INDEX_PATH = os.path.join(PROC_DIR, "lemma_index.json")
 UNICODE_MAP_PATH = os.path.join(PROC_DIR, "bliss_unicode_map.json")
 WSD_PATH = os.path.join(LEXICON_DIR, "disambiguation_rules.json")
 NEOLOGISMS_PATH = os.path.join(LEXICON_DIR, "neologisms.json")
+IDIOMS_PATH = os.path.join(LEXICON_DIR, "idioms.json")
 OUT_PATH = os.path.join(PROC_DIR, "alice_translated.jsonl")
 
 # Verified BCI ids for grammatical indicators (from BCI-AV 2025-02-15).
 BCI_COMBINE_MARKER = "13382"        # 'combine marker'
+BCI_NAME_INDICATOR = "15691"        # 'name' — NAME INDICATOR for proper nouns
 BCI_NOT = "15733"                   # 'not' — minus + intensity; before a verb
 BCI_OPPOSITE = "15927"              # 'opposite meaning' — antonym wrapper
 BCI_ACTION_INDICATOR = "8993"       # 'indicator (action)'
@@ -104,6 +106,57 @@ def load_wsd(path):
     data = load_json(path)
     data.pop("_meta", None)
     return data
+
+
+def load_idioms(path) -> dict:
+    """Load idioms as {tuple(lemmas): {components, gloss, note}}."""
+    if not os.path.exists(path):
+        return {}
+    data = load_json(path)
+    data.pop("_meta", None)
+    return {tuple(k.split()): v for k, v in data.items()}
+
+
+def match_idiom(idioms: dict, lemmas: list[str], i: int):
+    """
+    T-404: return (entry, length) if an idiom lemma-run starts at index i,
+    else None. Longer idioms take precedence over shorter ones.
+    """
+    best = None
+    for key, entry in idioms.items():
+        n = len(key)
+        if i + n <= len(lemmas) and tuple(lemmas[i:i + n]) == key:
+            if best is None or n > best[1]:
+                best = (entry, n)
+    return best
+
+
+def translate_sentence(lexicon, index, wsd_rules, idioms, sent, sentence_text) -> list:
+    """Translate a sentence, collapsing idiom lemma-runs into one compound."""
+    toks = sent["tokens"]
+    lemmas = [t["lemma"] for t in toks]
+    out = []
+    i = 0
+    while i < len(toks):
+        m = match_idiom(idioms, lemmas, i)
+        if m:
+            entry, length = m
+            uni, comp_gloss = assemble_neologism(entry["components"], lexicon)
+            span_text = " ".join(toks[j]["text"] for j in range(i, i + length))
+            out.append({
+                "lemma": span_text,
+                "resolved_referent": None,
+                "type": "Compound",
+                "unicode": uni,
+                "gloss": f"[idiom: {entry.get('gloss','')}] {comp_gloss}",
+                "bci_id": BCI_COMBINE_MARKER,
+                "review": False, "review_reason": None, "role": "content",
+            })
+            i += length
+        else:
+            out.append(translate_token(lexicon, index, wsd_rules, sentence_text, toks[i]))
+            i += 1
+    return out
 
 
 def load_unicode_map() -> dict[str, str]:
@@ -186,14 +239,24 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
                 "type": "Function", "unicode": "", "gloss": f"[{pos.lower()}]",
                 "bci_id": None, "review": False, "role": "function"}
 
-    # Proper nouns -> semantic neologism.
-    entry = _PROPER_NOUN_NEologISMS.get(lemma)
-    if pos == "PROPN" and entry:
-        uni, comp_gloss = assemble_neologism(entry["components"], lexicon)
-        gloss = f"[{entry.get('gloss', lemma)}] {comp_gloss}"
+    # Proper nouns -> semantic neologism, else NAME INDICATOR transliteration.
+    if pos == "PROPN":
+        entry = _PROPER_NOUN_NEologISMS.get(lemma)
+        if entry:
+            uni, comp_gloss = assemble_neologism(entry["components"], lexicon)
+            gloss = f"[{entry.get('gloss', lemma)}] {comp_gloss}"
+            return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
+                    "type": "Compound", "unicode": uni, "gloss": gloss,
+                    "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
+        # T-403: no semantic neologism -> NAME INDICATOR transliteration
+        # placeholder, flagged for review (letter glyphs pending BlissFont).
+        nm = render(BCI_NAME_INDICATOR)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
-                "type": "Compound", "unicode": uni, "gloss": gloss,
-                "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
+                "type": "Transliteration",
+                "unicode": f"{nm}{lemma}{nm}",
+                "gloss": f"[NAME] {lemma} (transliteration)",
+                "bci_id": BCI_NAME_INDICATOR, "review": True, "role": "content",
+                "review_reason": "transliteration fallback — coin a neologism"}
 
     # T-405: word-sense disambiguation takes precedence over naive lookup.
     wsd_id, meta = apply_wsd(lemma, sentence_text, wsd_rules)
@@ -275,6 +338,7 @@ def main() -> None:
     lexicon = load_json(LEXICON_PATH)
     _LEMMA_INDEX = load_json(INDEX_PATH)
     wsd_rules = load_wsd(WSD_PATH)
+    idioms = load_idioms(IDIOMS_PATH)
     umap = load_unicode_map()
     if os.path.exists(NEOLOGISMS_PATH):
         neo = load_json(NEOLOGISMS_PATH)
@@ -282,6 +346,8 @@ def main() -> None:
         _PROPER_NOUN_NEologISMS = neo
     if wsd_rules:
         print(f"Loaded WSD rules for: {list(wsd_rules.keys())}")
+    if idioms:
+        print(f"Loaded {len(idioms)} idiom rules")
     print(f"Loaded neologism registry: {len(_PROPER_NOUN_NEologISMS)} proper nouns")
     print(f"Unicode map: {len(umap)} glyphs (from BlissFont)")
 
@@ -298,9 +364,9 @@ def main() -> None:
             out_sentences = []
             for sent in para.get("sentences", []):
                 sentence_text = sent["text"]
-                translated = [translate_token(lexicon, _LEMMA_INDEX, wsd_rules,
-                                              sentence_text, t)
-                              for t in sent["tokens"]]
+                translated = translate_sentence(lexicon, _LEMMA_INDEX,
+                                                wsd_rules, idioms, sent,
+                                                sentence_text)
                 for t in translated:
                     total += 1
                     role = t.get("role", "content")

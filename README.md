@@ -87,6 +87,9 @@ uv run python scripts/load_blissfont.py
 # 6. Stage 4 — export the human review spreadsheet
 uv run python scripts/export_review.py
 
+# 6b. (optional) Ingest reviewer decisions back into the lexicon
+uv run python scripts/apply_reviews.py   # then re-run translate.py
+
 # 7. Render the interlinear Alice book (Typst + BlissaryFont) -> book/alice.pdf
 uv run python scripts/render_book.py
 typst compile --font-path book/fonts book/alice.typ book/alice.pdf

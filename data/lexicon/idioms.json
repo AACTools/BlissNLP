@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "description": "Semantic de-idiomization rules for Victorian / Alice idioms (T-404). Each key is a space-joined sequence of spaCy LEMMAS; when a sentence contains that lemma run, it is translated as one COMBINE-wrapped compound from the listed BCI component ids instead of word-by-word. Add idioms here (components verified against BCI-AV 2025-02-15).",
+    "schema_version": 1
+  },
+  "burn with curiosity": {
+    "components": ["24833", "14947", "15162"],
+    "gloss": "having great desire to know",
+    "note": "desire + intensity + knowledge (literal 'burning' is de-idiomised)"
+  },
+  "down the rabbit hole": {
+    "components": ["13869", "14883"],
+    "gloss": "descending into the hole",
+    "note": "down + hole"
+  },
+  "down the rabbit-hole": {
+    "components": ["13869", "14883"],
+    "gloss": "descending into the hole",
+    "note": "down + hole (hyphenated form)"
+  },
+  "of no use": {
+    "components": ["15927", "18035"],
+    "gloss": "useless / of no use",
+    "note": "opposite meaning + want/need"
+  }
+}

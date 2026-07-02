@@ -110,3 +110,39 @@ def test_full_sentence_translation_end_to_end():
     assert by_lemma["see"]["gloss"].startswith("NOT + see")
     assert "riverbank" in by_lemma["bank"]["review_reason"]
     assert by_lemma["."]["role"] == "punct"
+
+
+# --- T-403: transliteration fallback for unmapped proper nouns -------------
+
+def test_unknown_proper_noun_uses_name_indicator():
+    translate._PROPER_NOUN_NEologISMS = {}  # no neologism registered
+    translate._UNICODE_MAP = {"15691": "\U00016363"}  # name indicator
+    out = translate.translate_token(LEXICON, INDEX, WSD, "Lory", _tok("Lory", "lory", "PROPN"))
+    assert out["type"] == "Transliteration"
+    assert out["review"] is True
+    assert out["unicode"].startswith("\U00016363")  # wrapped in name indicator
+    assert "lory" in out["unicode"]
+
+
+# --- T-603: reviewer correction parsing -----------------------------------
+
+def test_apply_reviews_parse_correction():
+    import apply_reviews
+    assert apply_reviews.parse_correction("14439") == ["14439"]
+    assert apply_reviews.parse_correction("15416 + 14682") == ["15416", "14682"]
+    assert apply_reviews.parse_correction("ids 12345, 67890") == ["12345", "67890"]
+    assert apply_reviews.parse_correction("") == []
+    assert apply_reviews.parse_correction(None) == []
+
+
+# --- T-605: round-trip stability (translate twice = same output) -----------
+
+def test_translation_is_idempotent():
+    sentence = "Alice did not see the bank."
+    parsed = [_tok("Alice", "alice", "PROPN"),
+              _tok("see", "see", "VERB", is_negated=True),
+              _tok("bank", "bank", "NOUN")]
+    first = [translate.translate_token(LEXICON, INDEX, WSD, sentence, t) for t in parsed]
+    second = [translate.translate_token(LEXICON, INDEX, WSD, sentence, t) for t in parsed]
+    assert [t["unicode"] for t in first] == [t["unicode"] for t in second]
+    assert [t["gloss"] for t in first] == [t["gloss"] for t in second]

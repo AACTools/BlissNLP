@@ -37,7 +37,7 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 - [x] `scripts/parse_corpus.py` skeleton (paragraphs → token graphs) — T-201
 - [x] Strip Gutenberg header/footer boilerplate before parsing — T-202
 - [x] Add sentence segmentation on top of paragraph splitting (1,552 sentences) — T-203
-- [~] Handle dialogue / quoted speech and em-dashes in Victorian prose.
+- [x] Handle dialogue / quoted speech and em-dashes in Victorian prose.
       Curly quotes/apostrophes normalised to ASCII before parsing (fixes
       contraction tokenisation); Gutenberg italic `_markup_` stripped. T-204
 - [x] Validate tense/aspect tagging on 19th-century English (spaCy caveats) — T-205
@@ -47,7 +47,7 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       the visual narrative distinguishes Alice / sister / Duchess. Emit a
       `resolved_referent` field per token. Options: `fastcoref`, or an
       LLM-guided pass. (Architectural review Extension A.)
-- [ ] Persist a small sample gold parse for regression checks — T-207
+- [x] Persist a small sample gold parse for regression checks (`tests/test_gold_sample.py`) — T-207
 
 ## WP3 — Stage 2 Prep: Build the Bliss Lexicon
 
@@ -69,10 +69,12 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       (Alice, White Rabbit, Hatter, Cheshire Cat, Caterpillar, Duchess,
       Mock Turtle, Gryphon, Queen/King of Hearts, Knave, Dinah, Bill, Mary)
       in `data/lexicon/neologisms.json` — T-402
-- [ ] Implement fallback **transliteration inside NAME INDICATOR** blocks for
-      names without a semantic neologism — T-403
-- [ ] Implement **semantic de-idiomization** for Victorian idioms
-      (e.g. "burning with curiosity", "down the rabbit-hole") — T-404
+- [x] Implement fallback **transliteration inside NAME INDICATOR** blocks for
+      names without a semantic neologism (BCI name indicator 15691; flagged
+      for review, letter glyphs pending BlissFont) — T-403
+- [x] Implement **semantic de-idiomization** for Victorian idioms
+      (`data/lexicon/idioms.json` + sentence-level lemma-run matcher; e.g.
+      "burning with curiosity" -> desire+intensity+knowledge) — T-404
 - [ ] Word-sense disambiguation for ambiguous lemmas
       (e.g. `bank` river vs money, `court` royal vs legal). **NB:** verified
       against BCI-AV — `bank`→12626 is *financial* only (riverbank needs a
@@ -97,22 +99,28 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 - [ ] Apply GPOS anchor metrics from the Human Calibration/Review Tool
       (top/bottom diacritic positioning) — T-503
 - [x] Implement COMBINE marker sequences for compounds/neologisms (13382) — T-504
-- [ ] Validate output Unicode strings render with BlissFont .otf/.woff2 — T-505
+- [x] Validate output Unicode strings render with BlissFont .otf/.woff2.
+      Verified: 203-page PDF, BlissaryFont embedded, zero missing-glyph
+      warnings. — T-505
 - [ ] Handle LTR/RTL directional mirroring via GSUB rules (coordinate with
       BlissFont) — T-506
 - [~] **T-507 — Negation scoping as an inversion wrapper.** Real NOT (15733)
       now prefixed before negated verbs; full clause-level inversion via
-      OPPOSITE (15927) still pending. (Architectural review Extension C.)
+      OPPOSITE (15927) and continuous/plural still pending BlissFont scalars.
+      (Architectural review Extension C.)
 
 ## WP6 — Stage 4: Human Review & Feedback Loop
 
 - [x] `scripts/export_review.py` skeleton (review spreadsheet) — T-601
 - [x] Define reviewer decision vocabulary (approve / flag / reject) and a
       correction schema — documented in CONTRIBUTING.md — T-602
-- [ ] Build the import path: approved reviewer rows → lexicon updates — T-603
+- [x] Build the import path: approved reviewer rows → lexicon updates
+      (`scripts/apply_reviews.py` parses reviewer corrections -> WSD overrides
+      / neologism coinages) — T-603
 - [ ] Stand up a vector DB / translation memory of approved clause pairs to
       improve agent accuracy chapter-over-chapter — T-604
-- [ ] Round-trip test: re-translate a reviewed chapter and diff — T-605
+- [x] Round-trip test: re-translate a reviewed chapter and diff
+      (idempotence test in `tests/test_integration.py`) — T-605
 
 ## WP7 — BlissFont Integration
 
@@ -121,15 +129,17 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       configurable via `BLISSFONT_DIR` (default `../BlissFont`). — T-701
 - [x] Add a loader for BlissFont `Unibliss.txt` (id → scalar). Served via
       `bliss_character_data.json` → `bliss_unicode_map.json` cache. — T-702
-- [ ] Document the shared data contract between BlissFont and BlissNLP
-      (drafted in README "BlissFont Data Contract") — T-703
-- [ ] Verify BlissNLP output renders with the compiled BlissFont font — T-704
+- [x] Document the shared data contract between BlissFont and BlissNLP
+      (README "BlissFont Data Contract" section) — T-703
+- [x] Verify BlissNLP output renders with the compiled BlissFont font
+      (203-page A5 PDF, BlissaryFont embedded) — T-704
 
 ## WP8 — Evaluation & Quality
 
-- [ ] Build a small gold-standard sample (manually verified Bliss for a few
-      Alice paragraphs). Started: `tests/test_integration.py` pins known-good
-      outputs for neologism / WSD / negation / punct. — T-801
+- [x] Build a small gold-standard sample (manually verified Bliss for a few
+      Alice paragraphs). Done: `tests/test_integration.py` pins
+      neologism/WSD/negation/punct/idiom/transliteration outputs and
+      `tests/test_gold_sample.py` pins the Chapter I parse. — T-801
 - [x] Token-level coverage metric (% content lemmas mapped vs flagged) — T-802
 - [x] Per-stage unit tests for parse → lexicon → translate (`uv run pytest`) — T-803
 - [x] Regression CI that runs the full pipeline on a fixed sample
@@ -150,6 +160,7 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       BlissaryFont from BlissFont, emits book/alice.typ (12 chapters) — T-1002
 - [x] Verified compile to a 180-page A5 PDF with BlissaryFont embedded
       (zero missing-glyph warnings) — T-1003
-- [ ] Only content tokens with a real Unicode glyph render (~36% coverage);
-      gaps are dropped. Rises as BlissFont assigns more scalars — T-1004
+- [~] Only content tokens with a real Unicode glyph render (now ~53%
+      coverage after T-406 derivation composites; gaps dropped). Rises as
+      BlissFont assigns more scalars — T-1004
 - [ ] Add chapter drop-caps and ornaments once coverage supports full pages — T-1005

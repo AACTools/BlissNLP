@@ -10,14 +10,33 @@
       {
         "bci_id": null,
         "sense_description": "sloped riverbank (Alice sits by her sister on the bank)",
-        "derivation_components": ["12640", "29623"],
+        "derivation_components": [
+          "12640",
+          "29623"
+        ],
         "derivation_note": "shore (ground_level) + downward slope",
-        "trigger_keywords": ["river", "water", "sitting", "sat", "grass", "sister", "slope", "bank"]
+        "trigger_keywords": [
+          "river",
+          "water",
+          "sitting",
+          "sat",
+          "grass",
+          "sister",
+          "slope",
+          "bank"
+        ]
       },
       {
         "bci_id": "12626",
         "sense_description": "financial institution",
-        "trigger_keywords": ["money", "gold", "coins", "lend", "saving", "transaction"]
+        "trigger_keywords": [
+          "money",
+          "gold",
+          "coins",
+          "lend",
+          "saving",
+          "transaction"
+        ]
       }
     ]
   },
@@ -28,16 +47,33 @@
       {
         "bci_id": null,
         "sense_description": "royal assembly (Queen of Hearts' court)",
-        "derivation_components": ["23626", "23559"],
+        "derivation_components": [
+          "23626",
+          "23559"
+        ],
         "derivation_note": "queen + king composite",
-        "trigger_keywords": ["queen", "king", "hearts", "knave", "majesty", "throne"]
+        "trigger_keywords": [
+          "queen",
+          "king",
+          "hearts",
+          "knave",
+          "majesty",
+          "throne"
+        ]
       },
       {
         "bci_id": null,
         "sense_description": "legal trial room",
         "derivation_components": [],
         "derivation_note": "TODO: resolve judge/trial glyphs",
-        "trigger_keywords": ["trial", "jury", "judge", "witness", "evidence", "verdict"]
+        "trigger_keywords": [
+          "trial",
+          "jury",
+          "judge",
+          "witness",
+          "evidence",
+          "verdict"
+        ]
       }
     ]
   },
@@ -48,7 +84,12 @@
       {
         "bci_id": "18044",
         "sense_description": "pocket watch (noun)",
-        "trigger_keywords": ["pocket", "rabbit", "time", "look"]
+        "trigger_keywords": [
+          "pocket",
+          "rabbit",
+          "time",
+          "look"
+        ]
       }
     ]
   }
