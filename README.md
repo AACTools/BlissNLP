@@ -109,12 +109,13 @@ python -m spacy download en_core_web_sm
 All intermediate artifacts live under `data/processed/` (JSONL = one record per
 paragraph) unless noted.
 
-**`alice_parsed.jsonl`** — Stage 1 output:
+**`alice_parsed.jsonl`** — Stage 1 output (tokens grouped into sentences, T-203):
 ```json
 { "paragraph_id": 0, "text": "...",
-  "tokens": [ { "index": 0, "text": "Alice", "lemma": "alice", "pos": "PROPN",
-    "tense": null, "aspect": null, "number": null, "is_negated": false,
-    "head": "alice", "dep": "nsubj", "resolved_referent": null } ] }
+  "sentences": [ { "sentence_index": 0, "text": "Alice was beginning ...",
+    "tokens": [ { "index": 0, "text": "Alice", "lemma": "alice", "pos": "PROPN",
+      "tense": null, "aspect": null, "number": null, "is_negated": false,
+      "head": "alice", "dep": "nsubj", "resolved_referent": null } ] } ] }
 ```
 
 **`bliss_lexicon.json`** (by BCI id) + **`lemma_index.json`** (`{lemma: bci_id}`):
@@ -126,12 +127,15 @@ paragraph) unless noted.
     "winbliss": "...", "canonical_gloss": "girl" } }
 ```
 
-**`alice_translated.jsonl`** — Stages 2 & 3 output (per token):
+**`alice_translated.jsonl`** — Stages 2 & 3 output (per sentence, per token):
 ```json
 { "paragraph_id": 0, "text": "...",
-  "translation": [ { "lemma": "bank", "role": "content", "type": "Compound",
-    "unicode": "\u275e[12640][29623]\u275e", "gloss": "[Combine] beach + slope (down) [Combine]",
-    "bci_id": null, "review": true, "review_reason": "composite sense: riverbank" } ] }
+  "sentences": [ { "sentence_index": 0, "text": "...",
+    "translation": [ { "lemma": "bank", "role": "content", "type": "Compound",
+      "unicode": "\u275e[12640][29623]\u275e",
+      "gloss": "[Combine] beach + slope (down) [Combine]",
+      "bci_id": "13382", "review": true,
+      "review_reason": "composite sense: riverbank" } ] } ] }
 ```
 
 Token `role`: `content` (NOUN/VERB/ADJ/ADV/PROPN/NUM/INTJ), `function`

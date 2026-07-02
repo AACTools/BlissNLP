@@ -36,7 +36,7 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 
 - [x] `scripts/parse_corpus.py` skeleton (paragraphs → token graphs) — T-201
 - [x] Strip Gutenberg header/footer boilerplate before parsing — T-202
-- [ ] Add sentence segmentation on top of paragraph splitting — T-203
+- [x] Add sentence segmentation on top of paragraph splitting (1,552 sentences) — T-203
 - [ ] Handle dialogue / quoted speech and em-dashes in Victorian prose — T-204
 - [x] Validate tense/aspect tagging on 19th-century English (spaCy caveats) — T-205
 - [x] Emit negation propagation from `neg` dep to the verb head — T-206
@@ -101,8 +101,8 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 ## WP6 — Stage 4: Human Review & Feedback Loop
 
 - [x] `scripts/export_review.py` skeleton (review spreadsheet) — T-601
-- [ ] Define reviewer decision vocabulary (approve / flag / reject) and a
-      correction schema — T-602
+- [x] Define reviewer decision vocabulary (approve / flag / reject) and a
+      correction schema — documented in CONTRIBUTING.md — T-602
 - [ ] Build the import path: approved reviewer rows → lexicon updates — T-603
 - [ ] Stand up a vector DB / translation memory of approved clause pairs to
       improve agent accuracy chapter-over-chapter — T-604
@@ -131,4 +131,4 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 - [x] README with quickstart — T-901
 - [x] Document the intermediate JSONL schemas (parsed / lexicon / translated) — T-902
 - [ ] Map each `TODO` in the scripts back to a T-ID here — T-903
-- [ ] Write a contributor guide for adding proper-noun neologisms — T-904
+- [x] Write a contributor guide for adding proper-noun neologisms (CONTRIBUTING.md) — T-904

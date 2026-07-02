@@ -3,7 +3,9 @@
 Stage 1 - Syntactic Parse (The Grammatical Analyzer)
 
 Runs the spaCy English model over Alice in Wonderland and extracts, per
-paragraph, the semantic components the downstream stages need:
+paragraph, the semantic components the downstream stages need. Tokens are
+grouped into sentences (T-203) so WSD (T-405) and coreference (T-208) can use
+sentence-level context. Per token:
   - lemma, coarse POS, morphological tense/aspect
   - noun number, dependency head and relation
   - resolved_referent (anaphora/coref target) — T-208
@@ -110,20 +112,31 @@ def main() -> None:
     paragraphs = load_paragraphs(ALICE_TXT)
     print(f"Stripped Gutenberg boilerplate; {len(paragraphs)} paragraphs remain.")
 
+    total_sents = 0
     with open(OUT_PATH, "w", encoding="utf-8") as out:
         for i, para in enumerate(paragraphs):
             doc = nlp(para)
             neg_heads = negated_verbs(doc)
             coref = resolve_coref(doc)
+            sentences = []
+            for s_idx, sent in enumerate(doc.sents):
+                tokens = [token_graph(t, coref, neg_heads)
+                          for t in sent if not t.is_space]
+                sentences.append({
+                    "sentence_index": s_idx,
+                    "text": sent.text.strip(),
+                    "tokens": tokens,
+                })
+            total_sents += len(sentences)
             record = {
                 "paragraph_id": i,
                 "text": para,
-                "tokens": [token_graph(t, coref, neg_heads)
-                           for t in doc if not t.is_space],
+                "sentences": sentences,
             }
             out.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-    print(f"Wrote parsed corpus -> {OUT_PATH}")
+    print(f"Wrote parsed corpus -> {OUT_PATH} "
+          f"({len(paragraphs)} paragraphs, {total_sents} sentences)")
 
 
 if __name__ == "__main__":

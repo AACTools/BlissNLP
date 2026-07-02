@@ -253,24 +253,31 @@ def main() -> None:
          open(OUT_PATH, "w", encoding="utf-8") as out:
         for line in src:
             para = json.loads(line)
-            sentence_text = para["text"]
-            translated = [translate_token(lexicon, index, wsd_rules,
-                                          sentence_text, t)
-                          for t in para["tokens"]]
-            for t in translated:
-                total += 1
-                role = t.get("role", "content")
-                outcomes[role] += 1
-                if role == "content":
-                    content_total += 1
-                    if t["review"]:
-                        content_review += 1
-                    elif t["unicode"] and not t["unicode"].startswith("["):
-                        rendered_glyphs += 1
+            out_sentences = []
+            for sent in para.get("sentences", []):
+                sentence_text = sent["text"]
+                translated = [translate_token(lexicon, index, wsd_rules,
+                                              sentence_text, t)
+                              for t in sent["tokens"]]
+                for t in translated:
+                    total += 1
+                    role = t.get("role", "content")
+                    outcomes[role] += 1
+                    if role == "content":
+                        content_total += 1
+                        if t["review"]:
+                            content_review += 1
+                        elif t["unicode"] and not t["unicode"].startswith("["):
+                            rendered_glyphs += 1
+                out_sentences.append({
+                    "sentence_index": sent["sentence_index"],
+                    "text": sentence_text,
+                    "translation": translated,
+                })
             out.write(json.dumps({
                 "paragraph_id": para["paragraph_id"],
                 "text": para["text"],
-                "translation": translated,
+                "sentences": out_sentences,
             }, ensure_ascii=False) + "\n")
 
     print(f"Wrote draft translations -> {OUT_PATH}")
