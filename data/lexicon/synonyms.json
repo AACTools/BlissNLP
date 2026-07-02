@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "description": "spaCy-lemma -> BCI gloss-form aliases (Gap B, lemma mismatch). When a content lemma has no direct index hit, translate.py consults this map before giving up. Each value is the BCI gloss string under which the concept is actually listed in BCI-AV 2025-02-15. Verified mappings only. Add freely.",
+    "schema_version": 1
+  },
+  "know": "knowledge",
+  "feel": "feeling",
+  "two": "2",
+  "three": "3",
+  "sit": "seat",
+  "eat": "food",
+  "moment": "time",
+  "footman": "man",
+  "dodo": "bird",
+  "leave": "depart",
+  "tone": "voice",
+  "begin": "beginning",
+  "mock": "copy",
+  "queer": "strange",
+  "croquet": "game",
+  "dormouse": "mouse",
+  "hastily": "fast",
+  "indeed": "true",
+  "suppose": "think",
+  "quite": "very"
+}

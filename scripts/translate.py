@@ -36,6 +36,7 @@ UNICODE_MAP_PATH = os.path.join(PROC_DIR, "bliss_unicode_map.json")
 WSD_PATH = os.path.join(LEXICON_DIR, "disambiguation_rules.json")
 NEOLOGISMS_PATH = os.path.join(LEXICON_DIR, "neologisms.json")
 IDIOMS_PATH = os.path.join(LEXICON_DIR, "idioms.json")
+SYNONYMS_PATH = os.path.join(LEXICON_DIR, "synonyms.json")
 OUT_PATH = os.path.join(PROC_DIR, "alice_translated.jsonl")
 
 # Verified BCI ids for grammatical indicators (from BCI-AV 2025-02-15).
@@ -196,12 +197,21 @@ def apply_wsd(lemma: str, sentence_text: str, wsd_rules: dict) -> tuple[str | No
     return rule.get("default_bci_id"), {"sense": rule.get("default_note", ""), "wsd_default": True}
 
 
+# lemma -> BCI gloss-form alias (Gap B fix); populated by main().
+_SYNONYMS: dict[str, str] = {}
+
+
 def entry_for(lexicon, index, lemma):
-    """Direct lemma lookup -> (entry, meta). Returns (None, {}) if absent."""
+    """Direct lemma lookup -> (entry, meta). Falls back to the synonym map
+    (lemma-form aliases) before giving up. Returns (None, {}) if absent."""
     bci_id = index.get(lemma)
     if not bci_id:
+        alias = _SYNONYMS.get(lemma)
+        if alias:
+            bci_id = index.get(alias)
+    if not bci_id:
         return None, {}
-    return lexicon.get(bci_id), {"lookup": "direct"}
+    return lexicon.get(bci_id), {"lookup": "synonym" if lemma in _SYNONYMS else "direct"}
 
 
 def assemble_neologism(component_ids: list[str], lexicon: dict) -> tuple[str, str]:
@@ -328,7 +338,7 @@ def _assemble(base_id, gloss, pos, tok, meta, lexicon) -> dict:
 
 
 def main() -> None:
-    global _PROPER_NOUN_NEologISMS, _LEMMA_INDEX
+    global _PROPER_NOUN_NEologISMS, _LEMMA_INDEX, _SYNONYMS
     for required in (PARSED_PATH, LEXICON_PATH, INDEX_PATH):
         if not os.path.exists(required):
             raise SystemExit(
@@ -339,6 +349,7 @@ def main() -> None:
     _LEMMA_INDEX = load_json(INDEX_PATH)
     wsd_rules = load_wsd(WSD_PATH)
     idioms = load_idioms(IDIOMS_PATH)
+    _SYNONYMS = load_wsd(SYNONYMS_PATH)  # same shape: dict with _meta to drop
     umap = load_unicode_map()
     if os.path.exists(NEOLOGISMS_PATH):
         neo = load_json(NEOLOGISMS_PATH)
@@ -348,6 +359,8 @@ def main() -> None:
         print(f"Loaded WSD rules for: {list(wsd_rules.keys())}")
     if idioms:
         print(f"Loaded {len(idioms)} idiom rules")
+    if _SYNONYMS:
+        print(f"Loaded {len(_SYNONYMS)} lemma synonyms")
     print(f"Loaded neologism registry: {len(_PROPER_NOUN_NEologISMS)} proper nouns")
     print(f"Unicode map: {len(umap)} glyphs (from BlissFont)")
 

@@ -87,6 +87,9 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       Generalised into derivation-composite rendering (T-406b): when a glyph
       has no Unicode scalar, render it from its BCI derivation components.
       Doubled the render rate (26% -> 53% of content tokens). — T-406
+- [~] **Lemma-synonym expansion** (`data/lexicon/synonyms.json`): map spaCy
+      lemmas to BCI gloss forms. Recovered feel/two/three/sit/eat/know/moment/
+      dodo/footman; coverage 73.6% -> 75.5%. Extend freely. — T-407
 
 ## WP5 — Stage 3: Visual Assembly
 
