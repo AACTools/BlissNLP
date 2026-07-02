@@ -28,21 +28,26 @@ for the full 4-stage agent pipeline this skeleton implements.
 BlissNLP/
 ├── .gitignore
 ├── .python-version
-├── pyproject.toml             # uv-managed dependencies
+├── pyproject.toml             # uv-managed dependencies (uv.lock is committed)
 ├── README.md
+├── TODO.md                    # work-package task tracker
 ├── Alice in Wonderland Translation Specification.md
 ├── example/                   # reference prototype (manual mock NLP output)
 │   └── translprototype.py
 ├── data/
+│   ├── lexicon/               # hand-authored, tracked (WSD seed rules, ...)
+│   │   └── disambiguation_rules.json
 │   ├── raw/                   # [gitignored] downloaded corpora + BCI data
 │   └── processed/             # [gitignored] parsed graphs, lexicon, output
-└── scripts/
-    ├── setup_models.py        # 0. install the spaCy English model
-    ├── download_data.py       # 1. fetch Alice + BCI-AV 2025 spreadsheet
-    ├── parse_corpus.py        # Stage 1: spaCy syntactic parse
-    ├── build_lexicon.py       # Stage 2 prep: parse BCI Excel -> lexicon
-    ├── translate.py           # Stages 2 & 3: concept mapping + glyph assembly
-    └── export_review.py       # Stage 4: human review sheet export
+├── scripts/
+│   ├── setup_models.py        # 0. install the spaCy English model
+│   ├── download_data.py       # 1. fetch Alice + BCI-AV 2025 spreadsheet
+│   ├── parse_corpus.py        # Stage 1: spaCy syntactic parse
+│   ├── build_lexicon.py       # Stage 2 prep: parse BCI Excel -> lexicon
+│   ├── translate.py           # Stages 2 & 3: WSD + concept mapping + assembly
+│   └── export_review.py       # Stage 4: human review sheet export
+└── tests/
+    └── test_pipeline.py       # regression tests (uv run pytest)
 ```
 
 ## Quickstart (end-to-end reproduction)
@@ -90,13 +95,56 @@ python -m spacy download en_core_web_sm
 
 | Stage | Script | Purpose |
 | :--- | :--- | :--- |
-| 1 — Syntactic Parse | `parse_corpus.py` | spaCy dependency + morph parse → semantic graphs |
-| 2 — Lexical Mapping | `build_lexicon.py`, `translate.py` | Resolve lemmas to BCI-AV 2025 concepts |
-| 3 — Visual Assembly | `translate.py` | Apply GPOS anchors / indicator morphology → Unicode |
+| 1 — Syntactic Parse | `parse_corpus.py` | spaCy dependency + morph parse → semantic graphs; strips Gutenberg boilerplate; flags clause-level negation; emits `resolved_referent` (coref placeholder) |
+| 2 — Lexical Mapping | `build_lexicon.py`, `translate.py` | Resolve lemmas to BCI-AV 2025 concepts; word-sense disambiguation via `data/lexicon/disambiguation_rules.json` |
+| 3 — Visual Assembly | `translate.py` | Apply indicator morphology (action/past/continuous/plural) + negation wrapper (BCI `not` 15733) → Unicode |
 | 4 — Human Review | `export_review.py` | Emit reviewer spreadsheet; feed approvals back |
+
+## Intermediate Data Schemas (T-902)
+
+All intermediate artifacts live under `data/processed/` (JSONL = one record per
+paragraph) unless noted.
+
+**`alice_parsed.jsonl`** — Stage 1 output:
+```json
+{ "paragraph_id": 0, "text": "...",
+  "tokens": [ { "index": 0, "text": "Alice", "lemma": "alice", "pos": "PROPN",
+    "tense": null, "aspect": null, "number": null, "is_negated": false,
+    "head": "alice", "dep": "nsubj", "resolved_referent": null } ] }
+```
+
+**`bliss_lexicon.json`** (by BCI id) + **`lemma_index.json`** (`{lemma: bci_id}`):
+```json
+{ "14439": { "bci_id": "14439", "gloss_en": "girl",
+    "synonyms": ["girl"], "derivations": ["child", "female"],
+    "bci_class": "BLUE", "category": "punctuation",
+    "translations": {"sv": "flicka", "de": "M\u00e4dchen", ...},
+    "winbliss": "...", "canonical_gloss": "girl" } }
+```
+
+**`alice_translated.jsonl`** — Stages 2 & 3 output (per token):
+```json
+{ "paragraph_id": 0, "text": "...",
+  "translation": [ { "lemma": "bank", "role": "content", "type": "Compound",
+    "unicode": "\u275e[12640][29623]\u275e", "gloss": "[Combine] beach + slope (down) [Combine]",
+    "bci_id": null, "review": true, "review_reason": "composite sense: riverbank" } ] }
+```
+
+Token `role`: `content` (NOUN/VERB/ADJ/ADV/PROPN/NUM/INTJ), `function`
+(PRON/DET/ADP/CCONJ/SCONJ/PART/AUX), or `punct`. Coverage is reported over
+`content` tokens only.
+
+## Verification
+
+```bash
+uv run pytest        # 14 regression tests over parse / lexicon / WSD / assembly
+```
 
 ## Status
 
-Skeleton. The scripts are runnable end-to-end but contain `TODO` markers where
-they depend on real spreadsheet column names, the final `Unibliss.txt` scalar
-assignment (from BlissFont), and curated proper-noun neologisms.
+End-to-end pipeline runs against the real BCI-AV 2025 data and the Gutenberg
+text of *Alice* (~817 paragraphs, ~13.5k content tokens, ~71% direct-lookup
+coverage). Outstanding work is tracked in [`TODO.md`](./TODO.md); highlights:
+final Unibliss scalar assignment (from BlissFont), real coreference resolution
+(T-208), proper-noun neologism registry (T-402), and the reviewer feedback loop
+(T-603/T-604).

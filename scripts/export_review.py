@@ -22,9 +22,11 @@ REVIEW_COLUMNS = [
     "paragraph_id",
     "source_text",
     "lemma",
+    "resolved_referent",
     "pos_category",
     "draft_gloss",
     "draft_unicode",
+    "review_reason",
     "reviewer_decision",   # approve / flag / reject (filled by humans)
     "reviewer_correction",
     "notes",
@@ -33,9 +35,7 @@ REVIEW_COLUMNS = [
 
 def main() -> None:
     if not os.path.exists(TRANSLATED_PATH):
-        raise SystemExit(
-            f"Missing {TRANSLATED_PATH}. Run translate.py first."
-        )
+        raise SystemExit(f"Missing {TRANSLATED_PATH}. Run translate.py first.")
     os.makedirs(PROC_DIR, exist_ok=True)
 
     rows = []
@@ -47,9 +47,11 @@ def main() -> None:
                     "paragraph_id": para["paragraph_id"],
                     "source_text": para["text"],
                     "lemma": tok["lemma"],
+                    "resolved_referent": tok.get("resolved_referent") or "",
                     "pos_category": tok["type"],
                     "draft_gloss": tok["gloss"],
                     "draft_unicode": tok["unicode"],
+                    "review_reason": tok.get("review_reason") or "",
                     "reviewer_decision": "FLAG" if tok.get("review") else "",
                     "reviewer_correction": "",
                     "notes": "",

@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "description": "Word-sense disambiguation rules for ambiguous Alice lemmas. Each entry lists a default BCI id plus context_rules; the first rule whose trigger_keywords appear in the sentence wins. 'bci_id': null means the sense has no direct BCI-AV glyph and must be built as a composite neologism from 'derivation_components'. IDs verified against BCI-AV 2025-02-15.",
+    "schema_version": 1
+  },
+  "bank": {
+    "default_bci_id": "12626",
+    "default_note": "financial institution (building + money) — the only direct BCI sense",
+    "context_rules": [
+      {
+        "bci_id": null,
+        "sense_description": "sloped riverbank (Alice sits by her sister on the bank)",
+        "derivation_components": ["12640", "29623"],
+        "derivation_note": "shore (ground_level) + downward slope",
+        "trigger_keywords": ["river", "water", "sitting", "sat", "grass", "sister", "slope", "bank"]
+      },
+      {
+        "bci_id": "12626",
+        "sense_description": "financial institution",
+        "trigger_keywords": ["money", "gold", "coins", "lend", "saving", "transaction"]
+      }
+    ]
+  },
+  "court": {
+    "default_bci_id": "13428",
+    "default_note": "BCI 'court' derives from 'old' — not the royal or legal sense; treat with care",
+    "context_rules": [
+      {
+        "bci_id": null,
+        "sense_description": "royal assembly (Queen of Hearts' court)",
+        "derivation_components": ["23626", "23559"],
+        "derivation_note": "queen + king composite",
+        "trigger_keywords": ["queen", "king", "hearts", "knave", "majesty", "throne"]
+      },
+      {
+        "bci_id": null,
+        "sense_description": "legal trial room",
+        "derivation_components": [],
+        "derivation_note": "TODO: resolve judge/trial glyphs",
+        "trigger_keywords": ["trial", "jury", "judge", "witness", "evidence", "verdict"]
+      }
+    ]
+  },
+  "watch": {
+    "default_bci_id": "18044",
+    "default_note": "pocket watch / timepiece (clock + hand + thing indicator)",
+    "context_rules": [
+      {
+        "bci_id": "18044",
+        "sense_description": "pocket watch (noun)",
+        "trigger_keywords": ["pocket", "rabbit", "time", "look"]
+      }
+    ]
+  }
+}
