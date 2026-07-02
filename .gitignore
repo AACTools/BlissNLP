@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+
+# macOS system files
+.DS_Store
+
+# Project data files
+data/raw/
+data/processed/
+*.db
+*.sqlite
+*.sqlite3

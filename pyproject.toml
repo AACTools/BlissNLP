@@ -1,0 +1,15 @@
+[project]
+name = "blissnlp"
+version = "0.1.0"
+description = "Computational translation pipeline mapping English text (Alice in Wonderland) to Blissymbolics using spaCy and the BCI-AV 2025 vocabulary."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pandas>=2.2",
+    "requests>=2.34",
+    "spacy>=3.7",
+]
+
+[tool.uv]
+package = false
