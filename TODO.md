@@ -107,10 +107,10 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       warnings. — T-505
 - [ ] Handle LTR/RTL directional mirroring via GSUB rules (coordinate with
       BlissFont) — T-506
-- [~] **T-507 — Negation scoping as an inversion wrapper.** Real NOT (15733)
-      now prefixed before negated verbs; full clause-level inversion via
-      OPPOSITE (15927) and continuous/plural still pending BlissFont scalars.
-      (Architectural review Extension C.)
+- [~] **T-507 — Negation scoping as an inversion wrapper.** NOT (15733 →
+      U+F3D75), continuous (28043), plural (27112) now all render via BlissFont
+      stable PUA. NOT is prefixed before negated verbs; full clause-level
+      inversion via OPPOSITE (15927) still optional. (Ext. C.)
 
 ## WP6 — Stage 4: Human Review & Feedback Loop
 

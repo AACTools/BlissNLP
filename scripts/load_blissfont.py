@@ -48,7 +48,12 @@ def _u(code: str) -> str | None:
 def build_unicode_map(blissfont_dir: str | None = None) -> dict[str, str]:
     """
     Read BlissFont's bliss_character_data.json and return {bci_id: char}.
-    Falls back to the cached map if BlissFont is unavailable.
+
+    Per id, prefer the official proposed Unicode scalar (e.g. U+167E8); when
+    none is assigned, fall back to BlissFont's stable Plane-15 PUA mapping
+    `0xF0000 + bci_id` (committed in BlissFont c6b63db), which the font ships
+    in its cmap for all 6,419 glyphs. Falls back to the cached map if
+    BlissFont is unavailable.
     """
     blissfont_dir = blissfont_dir or find_blissfont_dir()
     if not blissfont_dir:
@@ -61,12 +66,15 @@ def build_unicode_map(blissfont_dir: str | None = None) -> dict[str, str]:
     mapping: dict[str, str] = {}
     for e in entries:
         bci_id = str(e.get("bci_id") or "").strip()
+        if not bci_id or not bci_id.isdigit():
+            continue
         char = _u(e.get("proposed_unicode"))
-        if bci_id and char:
-            mapping[bci_id] = char
+        if char is None:
+            # Stable Plane-15 PUA fallback: 0xF0000 + bci_id.
+            char = chr(0xF0000 + int(bci_id))
+        mapping[bci_id] = char
 
     os.makedirs(PROC_DIR, exist_ok=True)
-    # Cache as codepoint strings for portability / inspection.
     code_cache = {bid: f"U+{ord(c):X}" for bid, c in mapping.items()}
     with open(CACHE_PATH, "w", encoding="utf-8") as f:
         json.dump(code_cache, f, ensure_ascii=False, indent=2)

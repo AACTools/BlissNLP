@@ -38,11 +38,14 @@
 }
 
 // Interlinear paragraph: English line above, Bliss line beneath.
+// Bliss line uses a font stack so Latin letters inside NAME INDICATOR
+// transliteration blocks render via the body font (mixed-script fallback),
+// per the BlissFont team's recommendation.
 #let para(en, bliss) = {
   block(width: 100%, spacing: 1.4em)[
     #set align(left)
     #text(font: en-font, size: 9.5pt)[#en]
     #v(0.35em)
-    #text(font: bliss-font, size: 22pt, spacing: 80%)[#bliss]
+    #text(font: (bliss-font, en-font), size: 22pt, spacing: 80%)[#bliss]
   ]
 }
