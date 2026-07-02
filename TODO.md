@@ -63,9 +63,10 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 ## WP4 — Stage 2: Lexical Mapping & Concept Resolution
 
 - [x] `scripts/translate.py` direct-lookup path — T-401
-- [ ] Curate a **proper-noun neologism registry** for Alice characters
+- [x] Curate a **proper-noun neologism registry** for Alice characters
       (Alice, White Rabbit, Hatter, Cheshire Cat, Caterpillar, Duchess,
-      Mock Turtle, Gryphon, Queen/King of Hearts, etc.) — T-402
+      Mock Turtle, Gryphon, Queen/King of Hearts, Knave, Dinah, Bill, Mary)
+      in `data/lexicon/neologisms.json` — T-402
 - [ ] Implement fallback **transliteration inside NAME INDICATOR** blocks for
       names without a semantic neologism — T-403
 - [ ] Implement **semantic de-idiomization** for Victorian idioms
@@ -90,7 +91,7 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       combine marker 13382, opposite 15927. — T-502
 - [ ] Apply GPOS anchor metrics from the Human Calibration/Review Tool
       (top/bottom diacritic positioning) — T-503
-- [ ] Implement COMBINE marker sequences for compounds/neologisms — T-504
+- [x] Implement COMBINE marker sequences for compounds/neologisms (13382) — T-504
 - [ ] Validate output Unicode strings render with BlissFont .otf/.woff2 — T-505
 - [ ] Handle LTR/RTL directional mirroring via GSUB rules (coordinate with
       BlissFont) — T-506
