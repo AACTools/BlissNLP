@@ -32,6 +32,20 @@ MODEL = "en_core_web_sm"
 _START_RE = re.compile(r"\*\*\*\s*START OF.*?\*\*\*", re.IGNORECASE | re.DOTALL)
 _END_RE = re.compile(r"\*\*\*\s*END OF.*?\*\*\*", re.IGNORECASE | re.DOTALL)
 
+# Curly punctuation -> ASCII for robust spaCy parsing. The Gutenberg source
+# uses typographic quotes/apostrophes which break contraction tokenisation
+# (e.g. "Alice's" -> VERB "s"). We keep the original text for display.
+CURLY_TO_ASCII = {
+    "\u2018": "'", "\u2019": "'",       # ' '
+    "\u201c": '"', "\u201d": '"',       # " "
+    "\u201a": ",", "\u201e": '"',       # ‚ „
+    "\u2013": "-", "\u2014": "-",       # en/em dash
+}
+
+
+def normalize_punctuation(text: str) -> str:
+    return "".join(CURLY_TO_ASCII.get(ch, ch) for ch in text)
+
 
 def strip_gutenberg_boilerplate(text: str) -> str:
     """Remove the Project Gutenberg header/footer, keeping only the novel body."""
@@ -115,7 +129,8 @@ def main() -> None:
     total_sents = 0
     with open(OUT_PATH, "w", encoding="utf-8") as out:
         for i, para in enumerate(paragraphs):
-            doc = nlp(para)
+            # Parse on punctuation-normalised text; keep original for display.
+            doc = nlp(normalize_punctuation(para))
             neg_heads = negated_verbs(doc)
             coref = resolve_coref(doc)
             sentences = []

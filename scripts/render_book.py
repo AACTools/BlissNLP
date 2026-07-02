@@ -74,23 +74,29 @@ def stage_fonts() -> str:
     return bf
 
 
-def esc_en(s: str) -> str:
-    """Escape a Typst string literal for the English line."""
+def esc_typst(s: str) -> str:
+    """Escape a Typst string literal (both English and Bliss content)."""
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def bliss_line(sentences: list) -> str:
-    """Build the Bliss glyph string for a paragraph from its sentences."""
+    """
+    Build the Bliss glyph string for a paragraph from its sentences.
+
+    Only content tokens that resolved to a real Unicode glyph (or a
+    derivation composite) are emitted, separated by Bliss word spaces.
+    Function words and ASCII punctuation are dropped — Bliss uses its own
+    punctuation glyphs (exclamation_mark 8483, question_mark 8485, ...) which
+    the pipeline does not yet emit, and ASCII punctuation would break the
+    Typst string literal.
+    """
     out: list[str] = []
     for sent in sentences:
         for tok in sent["translation"]:
             uni = tok.get("unicode", "")
             role = tok.get("role", "content")
-            if role == "punct":
-                out.append(tok["lemma"])        # pass punctuation through
-            elif role == "content" and uni and not uni.startswith("["):
+            if role == "content" and uni and not uni.startswith("["):
                 out.append(uni + " ")           # real glyph + Bliss word space
-            # function words and placeholder tokens contribute nothing
     return "".join(out).strip()
 
 
@@ -137,14 +143,14 @@ def main() -> None:
                 i += 2
             else:
                 i += 1
-            parts.append(f'#chapter("{esc_en(num)}", "{esc_en(title)}")')
+            parts.append(f'#chapter("{esc_typst(num)}", "{esc_typst(title)}")')
             n_chapters += 1
             continue
         bliss = bliss_line(p.get("sentences", []))
         # Only emit a paragraph block if it produced any Bliss glyphs,
         # so the book isn't littered with empty English-only lines.
         if bliss:
-            parts.append(f'#para("{esc_en(p["text"])}", "{bliss}")')
+            parts.append(f'#para("{esc_typst(p["text"])}", "{esc_typst(bliss)}")')
             n_paragraphs += 1
         i += 1
 

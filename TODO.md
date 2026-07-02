@@ -37,7 +37,9 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 - [x] `scripts/parse_corpus.py` skeleton (paragraphs → token graphs) — T-201
 - [x] Strip Gutenberg header/footer boilerplate before parsing — T-202
 - [x] Add sentence segmentation on top of paragraph splitting (1,552 sentences) — T-203
-- [ ] Handle dialogue / quoted speech and em-dashes in Victorian prose — T-204
+- [~] Handle dialogue / quoted speech and em-dashes in Victorian prose.
+      Curly quotes/apostrophes normalised to ASCII before parsing (fixes
+      contraction tokenisation); Gutenberg italic `_markup_` stripped. T-204
 - [x] Validate tense/aspect tagging on 19th-century English (spaCy caveats) — T-205
 - [x] Emit negation propagation from `neg` dep to the verb head — T-206
 - [ ] **T-208 — Anaphora / Coreference Resolution layer.** Resolve pronouns
@@ -79,7 +81,10 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       - [x] T-405a Context-rule matcher over trigger keywords (in `translate.py`)
       - [ ] T-405b Embedding-based sense selection: `argmax cos(e_ctx, e_gloss)`
             using sentence + BCI derivation embeddings
-- [ ] Composite neologism builder for unmapped spatial/relational phrases — T-406
+- [x] Composite neologism builder for unmapped spatial/relational phrases.
+      Generalised into derivation-composite rendering (T-406b): when a glyph
+      has no Unicode scalar, render it from its BCI derivation components.
+      Doubled the render rate (26% -> 53% of content tokens). — T-406
 
 ## WP5 — Stage 3: Visual Assembly
 

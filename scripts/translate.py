@@ -55,10 +55,34 @@ PUNCT_POS = {"PUNCT", "SYM", "SPACE"}
 # means all glyphs render as `[bci_id]` placeholders (used by tests).
 _UNICODE_MAP: dict[str, str] = {}
 
+# lemma -> bci_id reverse index. Populated by main(); used by T-406 to resolve
+# derivation-component glosses back to BCI ids.
+_LEMMA_INDEX: dict[str, str] = {}
+
 
 def render(bci_id: str) -> str:
     """Unicode char for a BCI id, or a `[bci_id]` placeholder if unmapped."""
     return _UNICODE_MAP.get(bci_id, f"[{bci_id}]")
+
+
+def derivation_composite(base_id: str, lexicon: dict) -> list[str] | None:
+    """
+    T-406: if `base_id` has no Unicode scalar but its BCI derivation components
+    all resolve (via the lemma index) to ids that DO render, return those
+    component ids so the token can be emitted as a COMBINE-wrapped composite.
+    Returns None when no full composite is possible.
+    """
+    entry = lexicon.get(base_id)
+    if not entry:
+        return None
+    comp_ids = [_LEMMA_INDEX.get(c) for c in entry.get("derivations", [])
+                if _LEMMA_INDEX.get(c)]
+    if not comp_ids:
+        return None
+    # Only fall back when every resolvable component actually renders.
+    if all(c in _UNICODE_MAP for c in comp_ids):
+        return comp_ids
+    return None
 
 
 # Proper-noun neologism registry: lemma -> {components, gloss, note}.
@@ -143,6 +167,12 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
     lemma = tok["lemma"]
     pos = tok["pos"]
 
+    # spaCy's "_" lemma is the unknown-lemma placeholder -> parse noise, skip.
+    if lemma == "_":
+        return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
+                "type": "Function", "unicode": "", "gloss": "[unknown-lemma]",
+                "bci_id": None, "review": False, "role": "function"}
+
     # Punctuation / symbols pass through verbatim, never flagged.
     if pos in PUNCT_POS:
         return {"lemma": tok["text"], "resolved_referent": tok.get("resolved_referent"),
@@ -171,7 +201,7 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
         entry = lexicon.get(wsd_id)
         if entry:
             return _assemble(wsd_id, entry["gloss_en"], pos, tok,
-                             {"sense": meta.get("sense", ""), "wsd": True})
+                             {"sense": meta.get("sense", ""), "wsd": True}, lexicon)
 
     # WSD may declare a composite sense (bci_id null with derivation_components).
     if wsd_id is None and meta.get("derivation_components"):
@@ -189,12 +219,24 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
                 "bci_id": None, "review": True, "role": "content",
                 "review_reason": "no BCI match"}
 
-    return _assemble(entry["bci_id"], entry["gloss_en"], pos, tok, lmeta)
+    return _assemble(entry["bci_id"], entry["gloss_en"], pos, tok, lmeta, lexicon)
 
 
-def _assemble(base_id, gloss, pos, tok, meta) -> dict:
+def _assemble(base_id, gloss, pos, tok, meta, lexicon) -> dict:
     """Apply morphosyntactic indicators to a resolved base glyph id."""
-    parts: list[str] = [base_id]
+    # T-406: if the base glyph has no scalar, render it as a composite of its
+    # derivation components (which may themselves be mapped).
+    base_ids: list[str] = [base_id]
+    is_composite = False
+    if base_id not in _UNICODE_MAP:
+        comp = derivation_composite(base_id, lexicon)
+        if comp:
+            base_ids = [BCI_COMBINE_MARKER] + comp + [BCI_COMBINE_MARKER]
+            names = [lexicon[c]["gloss_en"] for c in comp if c in lexicon]
+            gloss = f"{gloss} [composite: {' + '.join(names)}]"
+            is_composite = True
+
+    parts: list[str] = list(base_ids)
 
     # T-507: negation scoping — prefix NOT before a negated verb.
     if pos in ("VERB", "AUX") and tok.get("is_negated"):
@@ -216,14 +258,14 @@ def _assemble(base_id, gloss, pos, tok, meta) -> dict:
 
     unicode_out = "".join(render(p) for p in parts)
     return {"lemma": tok["lemma"], "resolved_referent": tok.get("resolved_referent"),
-            "type": meta.get("category", "Base Spacing"),
+            "type": "Compound" if is_composite else meta.get("category", "Base Spacing"),
             "unicode": unicode_out, "gloss": gloss,
             "bci_id": base_id, "review": False, "review_reason": None,
             "role": "content"}
 
 
 def main() -> None:
-    global _PROPER_NOUN_NEologISMS
+    global _PROPER_NOUN_NEologISMS, _LEMMA_INDEX
     for required in (PARSED_PATH, LEXICON_PATH, INDEX_PATH):
         if not os.path.exists(required):
             raise SystemExit(
@@ -231,7 +273,7 @@ def main() -> None:
             )
 
     lexicon = load_json(LEXICON_PATH)
-    index = load_json(INDEX_PATH)
+    _LEMMA_INDEX = load_json(INDEX_PATH)
     wsd_rules = load_wsd(WSD_PATH)
     umap = load_unicode_map()
     if os.path.exists(NEOLOGISMS_PATH):
@@ -256,7 +298,7 @@ def main() -> None:
             out_sentences = []
             for sent in para.get("sentences", []):
                 sentence_text = sent["text"]
-                translated = [translate_token(lexicon, index, wsd_rules,
+                translated = [translate_token(lexicon, _LEMMA_INDEX, wsd_rules,
                                               sentence_text, t)
                               for t in sent["tokens"]]
                 for t in translated:
