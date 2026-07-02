@@ -117,3 +117,26 @@ download_data,parse_corpus,build_lexicon,translate,export_review,render_book}.py
 Produces a 216-page interlinear English/Bliss A5 PDF in BlissaryFont, a
 reviewer spreadsheet, and full intermediate JSONL corpora — all backed by 29
 regression tests and CI.
+
+## 8. "Broken glyph" audit of the rendered book
+
+Of the 8,599 Bliss words that render in the PDF:
+
+| | Count | % |
+| :--- | ---: | ---: |
+| Fully clean (no placeholder) | 6,756 | 79% |
+| Contain an embedded `[id]` placeholder | 1,843 | 21% |
+
+**55% of the breakage is the three unmapped indicators** (BlissFont action #1):
+
+| Placeholder id | Meaning | Occurrences in Alice |
+| :--- | :--- | ---: |
+| 27112 | plural | 480 |
+| 28043 | continuous indicator | 321 |
+| 15733 | not (negation) | 211 |
+| | **subtotal** | **1,012** |
+
+Shipping those three scalars takes the book from **79% → ~90% clean rendered
+words** in one step. The residual ~830 are unmapped component glyphs inside
+neologism compounds (e.g. `heart` 14695, `queen` 23626) — also closed by
+ongoing BlissFont scalar assignment.
