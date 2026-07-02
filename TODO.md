@@ -115,20 +115,24 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
       configurable via `BLISSFONT_DIR` (default `../BlissFont`). — T-701
 - [x] Add a loader for BlissFont `Unibliss.txt` (id → scalar). Served via
       `bliss_character_data.json` → `bliss_unicode_map.json` cache. — T-702
-- [ ] Document the shared data contract between BlissFont and BlissNLP — T-703
+- [ ] Document the shared data contract between BlissFont and BlissNLP
+      (drafted in README "BlissFont Data Contract") — T-703
 - [ ] Verify BlissNLP output renders with the compiled BlissFont font — T-704
 
 ## WP8 — Evaluation & Quality
 
 - [ ] Build a small gold-standard sample (manually verified Bliss for a few
-      Alice paragraphs) — T-801
+      Alice paragraphs). Started: `tests/test_integration.py` pins known-good
+      outputs for neologism / WSD / negation / punct. — T-801
 - [x] Token-level coverage metric (% content lemmas mapped vs flagged) — T-802
 - [x] Per-stage unit tests for parse → lexicon → translate (`uv run pytest`) — T-803
-- [ ] Regression CI that runs the full pipeline on a fixed sample — T-804
+- [x] Regression CI that runs the full pipeline on a fixed sample
+      (`.github/workflows/ci.yml` runs pytest) — T-804
 
 ## WP9 — Documentation
 
 - [x] README with quickstart — T-901
 - [x] Document the intermediate JSONL schemas (parsed / lexicon / translated) — T-902
-- [ ] Map each `TODO` in the scripts back to a T-ID here — T-903
+- [x] Map each `TODO` in the scripts back to a T-ID here (only T-208 remains
+      inline) — T-903
 - [x] Write a contributor guide for adding proper-noun neologisms (CONTRIBUTING.md) — T-904

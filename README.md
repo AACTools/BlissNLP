@@ -142,6 +142,25 @@ Token `role`: `content` (NOUN/VERB/ADJ/ADV/PROPN/NUM/INTJ), `function`
 (PRON/DET/ADP/CCONJ/SCONJ/PART/AUX), or `punct`. Coverage is reported over
 `content` tokens only.
 
+## BlissFont Data Contract (T-703)
+
+BlissNLP reads a single artifact from the sibling
+[`BlissFont`](https://github.com/aactools/BlissFont) repo:
+
+| Source (BlissFont) | Field | Used for |
+| :--- | :--- | :--- |
+| `data/processed/bliss_character_data.json` | `bci_id`, `proposed_unicode` | building `bliss_unicode_map.json` (BCI id → char) |
+
+Resolved by `scripts/load_blissfont.py` via `BLISSFONT_DIR` (default
+`../BlissFont`). The map is cached at `data/processed/bliss_unicode_map.json`,
+so BlissFont is only needed when refreshing the cache. When a BCI id is not yet
+assigned a scalar in BlissFont, the token renders as a `[bci_id]` placeholder —
+coverage of real Unicode rises as BlissFont assigns more scalars.
+
+**Shared BCI ids** (verified against BCI-AV 2025-02-15, used as the bridge):
+grammatical indicators — combine marker 13382, not 15733, opposite 15927,
+action 8993, past 9004, continuous 28043, plural 27112.
+
 ## Verification
 
 ```bash
