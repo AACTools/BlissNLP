@@ -1,0 +1,6 @@
+# Derived from the sibling BlissFont repo at render time
+fonts/
+
+# Generated output
+*.pdf
+alice.typ

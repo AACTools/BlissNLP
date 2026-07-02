@@ -137,3 +137,14 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 - [x] Map each `TODO` in the scripts back to a T-ID here (only T-208 remains
       inline) — T-903
 - [x] Write a contributor guide for adding proper-noun neologisms (CONTRIBUTING.md) — T-904
+
+## WP10 — Rendered Edition (Typst)
+
+- [x] Interlinear English / Bliss book template (`book/template.typ`) — T-1001
+- [x] `scripts/render_book.py`: reads alice_translated.jsonl, stages
+      BlissaryFont from BlissFont, emits book/alice.typ (12 chapters) — T-1002
+- [x] Verified compile to a 180-page A5 PDF with BlissaryFont embedded
+      (zero missing-glyph warnings) — T-1003
+- [ ] Only content tokens with a real Unicode glyph render (~36% coverage);
+      gaps are dropped. Rises as BlissFont assigns more scalars — T-1004
+- [ ] Add chapter drop-caps and ornaments once coverage supports full pages — T-1005
