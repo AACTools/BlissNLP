@@ -3,28 +3,23 @@
 Stages 2 & 3 - Lexical Mapping + Visual Assembly
 
 Consumes:
-  - data/processed/alice_parsed.jsonl   (Stage 1 output)
-  - data/processed/bliss_lexicon.json   (canonical BCI entries by id)
-  - data/processed/lemma_index.json     (lemma -> bci_id reverse index)
-  - data/lexicon/disambiguation_rules.json (optional WSD seed rules)
+  - data/processed/alice_parsed.jsonl        (Stage 1 output)
+  - data/processed/bliss_lexicon.json        (canonical BCI entries by id)
+  - data/processed/lemma_index.json          (lemma -> bci_id reverse index)
+  - data/processed/bliss_unicode_map.json    (bci_id -> char, from BlissFont)
+  - data/lexicon/disambiguation_rules.json   (optional WSD seed rules)
 
 Per token, resolves the lemma to a BCI-AV concept (with word-sense
 disambiguation), then applies the morphosyntactic assembly rules from the
-Translation Specification:
+Translation Specification. Glyphs are rendered to Unicode via the BlissFont
+map when available; unmapped ids appear as `[bci_id]` placeholders.
 
-  * Proper nouns  -> semantic neologism inside COMBINE markers (fallback:
-                     transliteration inside NAME INDICATOR).
-  * Verbs         -> base glyph + ACTION indicator (+ PAST / CONTINUOUS);
-                     negated verbs wrapped with NOT (BCI 15733).
-  * Plural nouns  -> base glyph + PLURAL indicator.
-  * Unmapped terms-> flagged for human review / composite construction.
+  * Proper nouns -> semantic neologism inside COMBINE markers (13382).
+  * Verbs        -> base glyph + action indicator (8993) (+ past 9004 /
+                    continuous 28043); negated verbs prefixed with NOT (15733).
+  * Plural nouns -> base glyph + plural indicator (27112).
+  * Unmapped     -> flagged for human review / composite construction.
 
-Negation (T-507): Bliss negation is a modifier, not a token. A negated verb is
-prefixed with the Bliss NOT glyph (bci_id 15733: 'minus + intensity, also used
-before a verb to create a negative sentence'); full clause inversion can use
-the OPPOSITE indicator (bci_id 15927).
-
-Outputs a draft Bliss-Unicode sequence per paragraph plus a coverage summary.
 Output: data/processed/alice_translated.jsonl
 """
 import json
@@ -33,37 +28,45 @@ from collections import Counter
 
 PROC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "processed"))
 LEXICON_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "lexicon"))
+SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 PARSED_PATH = os.path.join(PROC_DIR, "alice_parsed.jsonl")
 LEXICON_PATH = os.path.join(PROC_DIR, "bliss_lexicon.json")
 INDEX_PATH = os.path.join(PROC_DIR, "lemma_index.json")
+UNICODE_MAP_PATH = os.path.join(PROC_DIR, "bliss_unicode_map.json")
 WSD_PATH = os.path.join(LEXICON_DIR, "disambiguation_rules.json")
 OUT_PATH = os.path.join(PROC_DIR, "alice_translated.jsonl")
+
+# Verified BCI ids for grammatical indicators (from BCI-AV 2025-02-15).
+BCI_COMBINE_MARKER = "13382"        # 'combine marker'
+BCI_NOT = "15733"                   # 'not' — minus + intensity; before a verb
+BCI_OPPOSITE = "15927"              # 'opposite meaning' — antonym wrapper
+BCI_ACTION_INDICATOR = "8993"       # 'indicator (action)'
+BCI_PAST_INDICATOR = "9004"         # 'indicator (past action)'
+BCI_CONTINUOUS_INDICATOR = "28043"  # 'indicator (continuous form)'
+BCI_PLURAL_INDICATOR = "27112"      # 'plural'
 
 # Token role classification by spaCy coarse POS.
 CONTENT_POS = {"NOUN", "VERB", "ADJ", "ADV", "PROPN", "NUM", "INTJ"}
 FUNCTION_POS = {"PRON", "DET", "ADP", "CCONJ", "SCONJ", "PART", "AUX"}
 PUNCT_POS = {"PUNCT", "SYM", "SPACE"}
 
-# Verified BCI ids for grammatical indicators (resolved from BCI-AV 2025-02-15).
-BCI_NOT = "15733"            # 'not' — minus + intensity; prefixed before a verb
-BCI_OPPOSITE = "15927"       # 'opposite meaning' — up+down antonym wrapper
-BCI_ACTION_HINT = None       # TODO: resolve action-indicator id from BlissFont Unibliss
+# bci_id -> unicode char. Populated by main() via load_blissfont; empty default
+# means all glyphs render as `[bci_id]` placeholders (used by tests).
+_UNICODE_MAP: dict[str, str] = {}
 
-# Placeholder codepoints until BlissFont's Unibliss.txt scalar assignment lands.
-COMBINE_MARKER = "\u275e"
-ACTION_INDICATOR = "\u1dc7"
-PAST_INDICATOR = "\u1dc6"
-CONTINUOUS_INDICATOR = "\u1dc8"
-PLURAL_INDICATOR = "\u1dc5"
 
-# Descriptive neologisms for Alice proper nouns (lemma -> concept components).
-# NOTE: 'dream' is not in BCI-AV; 'fancy'/'imagination' also absent — pending a
-# curated concept or transliteration fallback (T-402/T-403).
+def render(bci_id: str) -> str:
+    """Unicode char for a BCI id, or a `[bci_id]` placeholder if unmapped."""
+    return _UNICODE_MAP.get(bci_id, f"[{bci_id}]")
+
+
+# Descriptive neologisms for Alice proper nouns (lemma -> concept component ids).
+# NOTE: 'dream' is not in BCI-AV; pending a curated concept (T-402).
 PROPER_NOUN_NEologISMS = {
-    "alice": ["girl"],
-    "hatter": ["man", "hat"],
-    "gryphon": ["bird", "animal"],
-    "rabbit": ["rabbit"],
+    "alice": ["14439"],          # girl
+    "hatter": ["14682"],         # hat (TODO: man + crazy + hat)
+    "gryphon": ["12840"],        # waterbird (approx)
+    "rabbit": ["16448"],         # rabbit
 }
 
 
@@ -76,9 +79,24 @@ def load_wsd(path):
     if not os.path.exists(path):
         return {}
     data = load_json(path)
-    # Drop the `_meta` documentation key so it's not treated as a lemma rule.
     data.pop("_meta", None)
     return data
+
+
+def load_unicode_map() -> dict[str, str]:
+    """Populate the module-level map from cache or BlissFont (T-701/T-702)."""
+    global _UNICODE_MAP
+    if os.path.exists(UNICODE_MAP_PATH):
+        cache = load_json(UNICODE_MAP_PATH)
+        _UNICODE_MAP = {bid: chr(int(cp[2:], 16)) for bid, cp in cache.items()
+                        if str(cp).startswith("U+")}
+        return _UNICODE_MAP
+    # No cache yet: import the loader and build it live.
+    import sys
+    sys.path.insert(0, SCRIPTS)
+    import load_blissfont  # noqa: WPS433
+    _UNICODE_MAP = load_blissfont.build_unicode_map()
+    return _UNICODE_MAP
 
 
 def apply_wsd(lemma: str, sentence_text: str, wsd_rules: dict) -> tuple[str | None, dict]:
@@ -111,12 +129,14 @@ def entry_for(lexicon, index, lemma):
 
 
 def assemble_neologism(component_ids: list[str], lexicon: dict) -> tuple[str, str]:
-    """Wrap a sequence of BCI components in COMBINE markers."""
-    gloss_parts = []
+    """Wrap a sequence of BCI components in COMBINE markers (13382)."""
+    gloss_parts, rendered = [], []
     for cid in component_ids:
         e = lexicon.get(cid)
         gloss_parts.append(e["gloss_en"] if e else f"?({cid})")
-    return (COMBINE_MARKER + "".join(f"[{c}]" for c in component_ids) + COMBINE_MARKER,
+        rendered.append(render(cid))
+    cm = render(BCI_COMBINE_MARKER)
+    return (cm + "".join(rendered) + cm,
             "[Combine] " + " + ".join(gloss_parts) + " [Combine]")
 
 
@@ -139,30 +159,26 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
 
     # Proper nouns -> semantic neologism.
     if pos == "PROPN" and lemma in PROPER_NOUN_NEologISMS:
-        comp = PROPER_NOUN_NEologISMS[lemma]
-        uni, gloss = assemble_neologism(comp, lexicon)
+        uni, gloss = assemble_neologism(PROPER_NOUN_NEologISMS[lemma], lexicon)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                 "type": "Compound", "unicode": uni, "gloss": gloss,
-                "bci_id": None, "review": False, "role": "content"}
+                "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
 
     # T-405: word-sense disambiguation takes precedence over naive lookup.
     wsd_id, meta = apply_wsd(lemma, sentence_text, wsd_rules)
     if wsd_id is not None:
         entry = lexicon.get(wsd_id)
         if entry:
-            base, gloss = wsd_id, entry["gloss_en"]
-            sense_note = meta.get("sense", "")
-            return _assemble(base, gloss, pos, tok, lexicon,
-                             {"sense": sense_note, "wsd": True})
+            return _assemble(wsd_id, entry["gloss_en"], pos, tok,
+                             {"sense": meta.get("sense", ""), "wsd": True})
 
     # WSD may declare a composite sense (bci_id null with derivation_components).
     if wsd_id is None and meta.get("derivation_components"):
         uni, gloss = assemble_neologism(meta["derivation_components"], lexicon)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                 "type": "Compound", "unicode": uni, "gloss": gloss,
-                "bci_id": None, "review": True, "role": "content",
-                "review_reason": f"composite sense: {meta.get('sense','')}"}
-
+                "bci_id": BCI_COMBINE_MARKER, "review": True, "role": "content",
+                "review_reason": f"composite sense: {meta.get('sense', '')}"}
 
     # Direct lexical lookup.
     entry, lmeta = entry_for(lexicon, index, lemma)
@@ -172,37 +188,36 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
                 "bci_id": None, "review": True, "role": "content",
                 "review_reason": "no BCI match"}
 
-    base, gloss = entry["bci_id"], entry["gloss_en"]
-    return _assemble(base, gloss, pos, tok, lexicon, lmeta)
+    return _assemble(entry["bci_id"], entry["gloss_en"], pos, tok, lmeta)
 
 
-def _assemble(base, gloss, pos, tok, lexicon, meta) -> dict:
-    """Apply morphosyntactic indicators to a resolved base glyph."""
-    review_reason = None
+def _assemble(base_id, gloss, pos, tok, meta) -> dict:
+    """Apply morphosyntactic indicators to a resolved base glyph id."""
+    parts: list[str] = [base_id]
 
     # T-507: negation scoping — prefix NOT before a negated verb.
     if pos in ("VERB", "AUX") and tok.get("is_negated"):
-        base = f"[{BCI_NOT}]{base}"
+        parts.insert(0, BCI_NOT)
         gloss = "NOT + " + gloss
 
     if pos in ("VERB", "AUX"):
-        # TODO: replace placeholder indicator once BlissFont Unibliss lands.
-        base += ACTION_INDICATOR
+        parts.append(BCI_ACTION_INDICATOR)
         gloss += " + [Verb]"
         if tok.get("tense") == "Past":
-            base += PAST_INDICATOR
+            parts.append(BCI_PAST_INDICATOR)
             gloss += " + [Past]"
         elif tok.get("aspect") == "Prog":
-            base += CONTINUOUS_INDICATOR
+            parts.append(BCI_CONTINUOUS_INDICATOR)
             gloss += " + [Continuous]"
     elif pos == "NOUN" and tok.get("number") == "Plur":
-        base += PLURAL_INDICATOR
+        parts.append(BCI_PLURAL_INDICATOR)
         gloss += " + [Plural]"
 
+    unicode_out = "".join(render(p) for p in parts)
     return {"lemma": tok["lemma"], "resolved_referent": tok.get("resolved_referent"),
             "type": meta.get("category", "Base Spacing"),
-            "unicode": base, "gloss": gloss,
-            "bci_id": meta, "review": False, "review_reason": review_reason,
+            "unicode": unicode_out, "gloss": gloss,
+            "bci_id": base_id, "review": False, "review_reason": None,
             "role": "content"}
 
 
@@ -216,13 +231,16 @@ def main() -> None:
     lexicon = load_json(LEXICON_PATH)
     index = load_json(INDEX_PATH)
     wsd_rules = load_wsd(WSD_PATH)
+    umap = load_unicode_map()
     if wsd_rules:
         print(f"Loaded WSD rules for: {list(wsd_rules.keys())}")
+    print(f"Unicode map: {len(umap)} glyphs (from BlissFont)")
 
     total = 0
-    outcomes = Counter()           # by role: content / function / punct
+    outcomes = Counter()
     content_review = 0
     content_total = 0
+    rendered_glyphs = 0
 
     with open(PARSED_PATH, "r", encoding="utf-8") as src, \
          open(OUT_PATH, "w", encoding="utf-8") as out:
@@ -240,6 +258,8 @@ def main() -> None:
                     content_total += 1
                     if t["review"]:
                         content_review += 1
+                    elif t["unicode"] and not t["unicode"].startswith("["):
+                        rendered_glyphs += 1
             out.write(json.dumps({
                 "paragraph_id": para["paragraph_id"],
                 "text": para["text"],
@@ -247,14 +267,16 @@ def main() -> None:
             }, ensure_ascii=False) + "\n")
 
     print(f"Wrote draft translations -> {OUT_PATH}")
-    # T-307: coverage report.
     content_mapped = content_total - content_review
     content_cov = (content_mapped / content_total * 100) if content_total else 0.0
+    render_rate = (rendered_glyphs / content_mapped * 100) if content_mapped else 0.0
     print(f"Tokens: {total} | content: {content_total} "
-          f"| function: {outcomes.get('function',0)} "
-          f"| punct: {outcomes.get('punct',0)}")
-    print(f"Content coverage: {content_mapped}/{content_total} "
-          f"({content_cov:.1f}%) | flagged for review: {content_review}")
+          f"| function: {outcomes.get('function', 0)} "
+          f"| punct: {outcomes.get('punct', 0)}")
+    print(f"Content coverage: {content_mapped}/{content_total} ({content_cov:.1f}%) "
+          f"| flagged: {content_review}")
+    print(f"Rendered to real Unicode: {rendered_glyphs}/{content_mapped} "
+          f"({render_rate:.1f}% of mapped content tokens)")
 
 
 if __name__ == "__main__":

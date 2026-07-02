@@ -95,15 +95,32 @@ LEXICON = {
 
 
 def test_assemble_neologism_wraps_in_combine_markers():
+    # Empty unicode map -> placeholder form. Combine marker id is 13382.
+    translate._UNICODE_MAP = {}
     uni, gloss = translate.assemble_neologism(["12640", "29623"], LEXICON)
-    assert uni.startswith(translate.COMBINE_MARKER)
-    assert uni.endswith(translate.COMBINE_MARKER)
+    assert uni.startswith("[13382]")  # combine marker placeholder
+    assert uni.endswith("[13382]")
+    assert "[12640]" in uni and "[29623]" in uni
     assert "beach" in gloss and "slope (down)" in gloss
 
 
+def test_assemble_neologism_renders_real_unicode_when_mapped():
+    translate._UNICODE_MAP = {"12640": "\U00016209", "13382": "\U00016760"}
+    uni, gloss = translate.assemble_neologism(["12640"], LEXICON)
+    assert uni == "\U00016760\U00016209\U00016760"  # marker + glyph + marker
+
+
 def test_assemble_neologism_missing_component_marked():
+    translate._UNICODE_MAP = {}
     uni, gloss = translate.assemble_neologism(["14439", "99999"], LEXICON)
     assert "?(99999)" in gloss
+
+
+def test_render_falls_back_to_placeholder():
+    translate._UNICODE_MAP = {}
+    assert translate.render("8993") == "[8993]"
+    translate._UNICODE_MAP = {"8993": "\U00016209"}
+    assert translate.render("8993") == "\U00016209"
 
 
 # --- translate: token role classification --------------------------------

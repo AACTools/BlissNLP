@@ -80,6 +80,10 @@ uv run python scripts/build_lexicon.py
 # 5. Stages 2 & 3 — lexical mapping + visual glyph assembly
 uv run python scripts/translate.py
 
+# (optional) Refresh the BCI-id -> Unicode map from the sibling BlissFont repo
+# (set BLISSFONT_DIR or rely on the default ../BlissFont path)
+uv run python scripts/load_blissfont.py
+
 # 6. Stage 4 — export the human review spreadsheet
 uv run python scripts/export_review.py
 ```

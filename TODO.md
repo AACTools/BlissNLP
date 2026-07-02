@@ -82,21 +82,21 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 
 ## WP5 — Stage 3: Visual Assembly
 
-- [ ] Resolve BCI id → proposed Unibliss Unicode scalar (consume
-      BlissFont `Unibliss.txt` once finalised) — T-501
-- [ ] Replace placeholder indicator codepoints with the ratified scalars
-      from L2/23-138 (N5228) — T-502
+- [x] Resolve BCI id → proposed Unibliss Unicode scalar. `scripts/load_blissfont.py`
+      reads BlissFont `bliss_character_data.json` → `data/processed/bliss_unicode_map.json`
+      (1,060 glyphs currently assigned). — T-501
+- [x] Replace placeholder indicator codepoints with verified BCI indicator ids:
+      action 8993, past 9004, continuous 28043, plural 27112, not 15733,
+      combine marker 13382, opposite 15927. — T-502
 - [ ] Apply GPOS anchor metrics from the Human Calibration/Review Tool
       (top/bottom diacritic positioning) — T-503
 - [ ] Implement COMBINE marker sequences for compounds/neologisms — T-504
 - [ ] Validate output Unicode strings render with BlissFont .otf/.woff2 — T-505
 - [ ] Handle LTR/RTL directional mirroring via GSUB rules (coordinate with
       BlissFont) — T-506
-- [ ] **T-507 — Negation scoping as an inversion wrapper.** In Bliss, negation
-      is a modifier, not a token. Use the verified BCI primitives: `not`
-      (15733, prefixed before a verb) and `opposite meaning` (15927, antonym
-      wrapper). Wrap the negated *compound sequence*, don't drop a linear
-      negative token. (Architectural review Extension C.)
+- [~] **T-507 — Negation scoping as an inversion wrapper.** Real NOT (15733)
+      now prefixed before negated verbs; full clause-level inversion via
+      OPPOSITE (15927) still pending. (Architectural review Extension C.)
 
 ## WP6 — Stage 4: Human Review & Feedback Loop
 
@@ -110,9 +110,11 @@ Legend mirrors the BlissFont brief (T-IDs, Work Packages).
 
 ## WP7 — BlissFont Integration
 
-- [ ] Decide coupling: read BlissFont's `data/processed/bliss_character_data.json`
-      and/or `bliss_vocabulary.db` directly vs. copying subsets — T-701
-- [ ] Add a loader for BlissFont `Unibliss.txt` (id → scalar) — T-702
+- [x] Decide coupling: read BlissFont's `data/processed/bliss_character_data.json`
+      (has `bci_id` + `proposed_unicode`). Loader: `scripts/load_blissfont.py`,
+      configurable via `BLISSFONT_DIR` (default `../BlissFont`). — T-701
+- [x] Add a loader for BlissFont `Unibliss.txt` (id → scalar). Served via
+      `bliss_character_data.json` → `bliss_unicode_map.json` cache. — T-702
 - [ ] Document the shared data contract between BlissFont and BlissNLP — T-703
 - [ ] Verify BlissNLP output renders with the compiled BlissFont font — T-704
 
