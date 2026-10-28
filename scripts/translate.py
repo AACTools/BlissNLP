@@ -244,7 +244,25 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
 
     # Function words are handled by grammatical indicators / coref / spatial
     # markers, not standalone glyphs. Record but don't burden the review queue.
+    # T-208 exception: pronouns with a resolved antecedent render that
+    # entity's glyph instead of being dropped.
     if pos in FUNCTION_POS:
+        if pos == "PRON":
+            ref = (tok.get("resolved_referent") or "").lower()
+            if ref and ref != lemma and ref != "_":
+                neo = _PROPER_NOUN_NEologISMS.get(ref)
+                if neo:
+                    uni, comp_gloss = assemble_neologism(neo["components"], lexicon)
+                    return {"lemma": lemma, "resolved_referent": ref,
+                            "type": "Compound", "unicode": uni,
+                            "gloss": f"[{ref}] {comp_gloss}",
+                            "bci_id": BCI_COMBINE_MARKER, "review": False,
+                            "role": "content"}
+                entry, lmeta = entry_for(lexicon, index, ref)
+                if entry:
+                    return _assemble(entry["bci_id"], entry["gloss_en"], "NOUN",
+                                     {**tok, "number": "Sing"}, {**lmeta, "coref": True},
+                                     lexicon)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                 "type": "Function", "unicode": "", "gloss": f"[{pos.lower()}]",
                 "bci_id": None, "review": False, "role": "function"}

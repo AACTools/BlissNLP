@@ -100,16 +100,98 @@ def token_graph(tok, coref: dict, neg_heads: set[int]) -> dict:
     }
 
 
+# --- T-208 heuristic coreference -------------------------------------------
+# Gender/number lexicon for the Alice cast + common person nouns. Values:
+# (gender, number) where gender in {FEM, MASC, NEUT}.
+ENTITY_LEXICON = {
+    "alice": ("FEM", "Sing"), "duchess": ("FEM", "Sing"), "queen": ("FEM", "Sing"),
+    "sister": ("FEM", "Sing"), "mother": ("FEM", "Sing"), "woman": ("FEM", "Sing"),
+    "girl": ("FEM", "Sing"), "mary": ("FEM", "Sing"), "dinah": ("FEM", "Sing"),
+    "cat": ("FEM", "Sing"), "lory": ("FEM", "Sing"), "mouse": ("NEUT", "Sing"),
+    "hatter": ("MASC", "Sing"), "rabbit": ("MASC", "Sing"), "king": ("MASC", "Sing"),
+    "knave": ("MASC", "Sing"), "bill": ("MASC", "Sing"), "man": ("MASC", "Sing"),
+    "boy": ("MASC", "Sing"), "gryphon": ("MASC", "Sing"), "turtle": ("MASC", "Sing"),
+    "caterpillar": ("MASC", "Sing"), "dodo": ("MASC", "Sing"), "father": ("MASC", "Sing"),
+    "brother": ("MASC", "Sing"), "gentleman": ("MASC", "Sing"),
+}
+PRONOUN_CLASSES = {
+    "she": ("FEM", "Sing"), "her": ("FEM", "Sing"), "hers": ("FEM", "Sing"),
+    "he": ("MASC", "Sing"), "him": ("MASC", "Sing"), "his": ("MASC", "Sing"),
+    "it": ("NEUT", "Sing"), "its": ("NEUT", "Sing"), "this": ("NEUT", "Sing"),
+    "that": ("NEUT", "Sing"),
+    "they": (None, "Plur"), "them": (None, "Plur"), "their": (None, "Plur"),
+    "we": (None, "Plur"), "us": (None, "Plur"), "our": (None, "Plur"),
+}
+
+
+def _mention_key(first_lemma: str, last_lemma: str) -> str | None:
+    """Pick the entity key for a proper-noun span: prefer a known name,
+    checking the last word too ('White Rabbit' -> rabbit)."""
+    for cand in (first_lemma, last_lemma):
+        if cand in ENTITY_LEXICON:
+            return cand
+    return first_lemma if first_lemma not in ("the", "a") else last_lemma
+
+
 def resolve_coref(doc) -> dict[int, str]:
     """
-    T-208 placeholder coreference resolver.
+    T-208 heuristic coreference (gender + number + salience, paragraph-scoped).
 
-    Returns a {token_index: referent} map. A real implementation will plug in
-    `fastcoref` or an LLM-guided pass here. For now this returns an empty map;
-    pronouns keep their own lemma as referent downstream.
+    Tracks entity mentions (proper nouns + lexiconed person nouns) with their
+    recency and frequency; assigns each personal/possessive pronoun the most
+    RECENT compatible entity, tie-broken by mention count. Returns
+    {token_index: entity_key}. Pronouns that find no compatible entity keep
+    their own lemma downstream (unchanged behaviour).
     """
-    # TODO T-208: integrate fastcoref / LLM coref over the doc/paragraph cluster.
-    return {}
+    entities: dict[str, dict] = {}   # key -> {gender, number, count, last}
+    mapping: dict[int, str] = {}
+
+    toks = list(doc)
+    i = 0
+    while i < len(toks):
+        tok = toks[i]
+        lemma = tok.lemma_.lower()
+
+        if tok.pos_ == "PRON" and lemma in PRONOUN_CLASSES:
+            gender, number = PRONOUN_CLASSES[lemma]
+            best, best_score = None, (-1, -1)
+            for key, ent in entities.items():
+                if gender is not None and ent["gender"] not in (gender, None):
+                    continue
+                if ent["number"] != number:
+                    continue
+                score = (ent["last"], ent["count"])
+                if score > best_score:
+                    best, best_score = key, score
+            if best is not None:
+                mapping[tok.i] = best
+            i += 1
+            continue
+
+        if tok.pos_ == "PROPN":
+            # group the proper-noun run
+            j = i
+            while j < len(toks) and toks[j].pos_ == "PROPN":
+                j += 1
+            first = toks[i].lemma_.lower()
+            last = toks[j - 1].lemma_.lower()
+            key = _mention_key(first, last)
+            gender, number = ENTITY_LEXICON.get(key, (None, "Sing"))
+            ent = entities.setdefault(key, {"gender": gender, "number": number, "count": 0, "last": -1})
+            ent["count"] += 1
+            ent["last"] = tok.i
+            i = j
+            continue
+
+        if tok.pos_ == "NOUN" and lemma in ENTITY_LEXICON:
+            gender, number = ENTITY_LEXICON[lemma]
+            ent = entities.setdefault(lemma, {"gender": gender, "number": number, "count": 0, "last": -1})
+            ent["count"] += 1
+            ent["last"] = tok.i
+
+        i += 1
+
+    return mapping
 
 
 def main() -> None:

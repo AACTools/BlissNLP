@@ -2,10 +2,12 @@
 
 ## BCI Authorized Vocabulary of Blissymbolics (BCI-AV) 2025-02-15
 - **Author**: Blissymbolics Communication International (BCI),
-  https://www.blissymbolics.org — used for the lexicon (English + 16-language
+  https://www.blissymbolics.org — used for the lexicon (English + 18-language
   glosses, derivations, POS classes) built by `scripts/build_lexicon.py`.
-- The BCI-AV release terms apply to lexicon derivatives; capture them before
-  redistributing (task T-106).
+- **Licence (verified 2026-10-28)**: **CC BY-SA 4.0** — see BlissFont/NOTICE.md
+  for BCI's preferred verbatim citation. Derived lexicon data
+  (synonyms.json, neologisms.json, reviewer corrections) inherits
+  share-alike; cite BCI.
 
 ## Project Gutenberg #11
 - *Alice's Adventures in Wonderland* by Lewis Carroll (1865), public domain.
