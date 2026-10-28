@@ -114,6 +114,17 @@ def test_full_sentence_translation_end_to_end():
 
 # --- T-403: transliteration fallback for unmapped proper nouns -------------
 
+def test_known_concept_proper_noun_uses_dictionary():
+    """March/Mouse/White are concepts spaCy capitalised — no letter-spelling."""
+    lex = dict(LEXICON, **{"14444": {"bci_id": "14444", "gloss_en": "March",
+                                     "derivations": [], "category": "Base Spacing"}})
+    idx = dict(INDEX, march="14444")
+    translate._PROPER_NOUN_NEologISMS = {}
+    out = translate.translate_token(lex, idx, WSD, "March",
+                                    _tok("March", "march", "PROPN"))
+    assert out["type"] != "Transliteration"
+    assert out["bci_id"] == "14444"
+
 def test_unknown_proper_noun_uses_name_indicator():
     translate._PROPER_NOUN_NEologISMS = {}  # no neologism registered
     # name indicator + the real Bliss letter glyphs for "Lory"

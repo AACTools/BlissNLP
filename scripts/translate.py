@@ -280,15 +280,23 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
                 "type": "Function", "unicode": "", "gloss": f"[{pos.lower()}]",
                 "bci_id": None, "review": False, "role": "function"}
 
-    # Proper nouns -> semantic neologism, else NAME INDICATOR transliteration.
+    # Proper nouns -> semantic neologism, else dictionary concept, else letters.
     if pos == "PROPN":
-        entry = _PROPER_NOUN_NEologISMS.get(lemma)
-        if entry:
-            uni, comp_gloss = assemble_neologism(entry["components"], lexicon)
-            gloss = f"[{entry.get('gloss', lemma)}] {comp_gloss}"
+        entry_neo = _PROPER_NOUN_NEologISMS.get(lemma)
+        if entry_neo:
+            uni, comp_gloss = assemble_neologism(entry_neo["components"], lexicon)
+            gloss = f"[{entry_neo.get('gloss', lemma)}] {comp_gloss}"
             return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                     "type": "Compound", "unicode": uni, "gloss": gloss,
                     "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
+        # Dictionary first: many "proper nouns" are ordinary concepts spaCy
+        # capitalised (March the month, Mouse the character, White, Soup).
+        # Only names with no concept at all get letter-spelled.
+        entry, lmeta = entry_for(lexicon, index, lemma)
+        if entry is not None:
+            return _assemble(entry["bci_id"], entry["gloss_en"], "NOUN",
+                             {**tok, "number": "Sing"},
+                             {**lmeta, "propn_lexical": True}, lexicon)
         # T-403: no semantic neologism -> NAME INDICATOR + Bliss letter spelling
         nm = render(BCI_NAME_INDICATOR)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),

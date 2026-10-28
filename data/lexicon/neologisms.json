@@ -1,8 +1,4 @@
 {
-  "_meta": {
-    "description": "Alice in Wonderland proper-noun neologism registry. Each entry maps a spaCy PROPN lemma to a sequence of BCI component ids that form a descriptive Bliss compound (enclosed in COMBINE markers). This is Alice-specific; it fires only when pos == PROPN so common-noun homographs (e.g. 'cat' the animal) still use direct lookup. Component ids verified against BCI-AV 2025-02-15. Add new characters here (T-402 / T-904).",
-    "schema_version": 1
-  },
   "alice": {
     "components": [
       "14439"
@@ -107,5 +103,44 @@
     ],
     "gloss": "bill the lizard",
     "note": "lizard"
+  },
+  "chapter": {
+    "components": [
+      "12875",
+      "15972"
+    ],
+    "gloss": "chapter",
+    "note": "book + part (coined; reviewer-confirmable)"
+  },
+  "majesty": {
+    "components": [
+      "23626",
+      "14695"
+    ],
+    "gloss": "Her Majesty (the Queen)",
+    "note": "reuses queen: woman + crown"
+  },
+  "pigeon": {
+    "components": [
+      "25871"
+    ],
+    "gloss": "pigeon",
+    "note": "approximation via dove (BCI-AV has no distinct pigeon)"
+  },
+  "english": {
+    "components": [
+      "22610",
+      "15172"
+    ],
+    "gloss": "English (language)",
+    "note": "england + language"
+  },
+  "cheshire": {
+    "components": [
+      "12383",
+      "17021"
+    ],
+    "gloss": "Cheshire (Cat)",
+    "note": "reuses cat entry; grin variant pending"
   }
 }

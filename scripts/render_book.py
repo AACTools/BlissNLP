@@ -95,7 +95,15 @@ def bliss_line(sentences: list) -> str:
         for tok in sent["translation"]:
             uni = tok.get("unicode", "")
             role = tok.get("role", "content")
-            if role == "content" and uni and not uni.startswith("["):
+            if role != "content":
+                continue
+            if tok.get("type") == "Transliteration":
+                # Untranslatable names: the data keeps the correct Bliss
+                # letter-spelling, but the READING edition shows the Latin
+                # name (mixed-script) — letter-runs made pages unreadable.
+                out.append(tok.get("lemma", "") + " ")
+                continue
+            if uni and not uni.startswith("["):
                 out.append(uni + " ")           # real glyph + Bliss word space
     return "".join(out).strip()
 
