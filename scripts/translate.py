@@ -226,6 +226,19 @@ def assemble_neologism(component_ids: list[str], lexicon: dict) -> tuple[str, st
             "[Combine] " + " + ".join(gloss_parts) + " [Combine]")
 
 
+# Bliss letter glyphs (BCI-AV 8521-8546 = a-z, 8551-8576 = A-Z). Used by the
+# T-403 transliteration fallback so names spell with real glyphs, not Latin.
+LETTER_BCI = {
+    **{chr(ord("a") + i): str(8521 + i) for i in range(26)},
+    **{chr(ord("A") + i): str(8551 + i) for i in range(26)},
+}
+
+
+def spell_in_bliss_letters(name: str) -> str:
+    """Render a name as Bliss letter glyph codepoints (non-letters skipped)."""
+    return "".join(render(LETTER_BCI[ch]) for ch in name if ch in LETTER_BCI)
+
+
 def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
     lemma = tok["lemma"]
     pos = tok["pos"]
@@ -276,13 +289,12 @@ def translate_token(lexicon, index, wsd_rules, sentence_text, tok) -> dict:
             return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                     "type": "Compound", "unicode": uni, "gloss": gloss,
                     "bci_id": BCI_COMBINE_MARKER, "review": False, "role": "content"}
-        # T-403: no semantic neologism -> NAME INDICATOR transliteration
-        # placeholder, flagged for review (letter glyphs pending BlissFont).
+        # T-403: no semantic neologism -> NAME INDICATOR + Bliss letter spelling
         nm = render(BCI_NAME_INDICATOR)
         return {"lemma": lemma, "resolved_referent": tok.get("resolved_referent"),
                 "type": "Transliteration",
-                "unicode": f"{nm}{lemma}{nm}",
-                "gloss": f"[NAME] {lemma} (transliteration)",
+                "unicode": f"{nm}{spell_in_bliss_letters(lemma)}{nm}",
+                "gloss": f"[NAME] {lemma} (Bliss letter spelling)",
                 "bci_id": BCI_NAME_INDICATOR, "review": True, "role": "content",
                 "review_reason": "transliteration fallback — coin a neologism"}
 

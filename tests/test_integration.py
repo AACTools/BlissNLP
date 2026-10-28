@@ -116,12 +116,21 @@ def test_full_sentence_translation_end_to_end():
 
 def test_unknown_proper_noun_uses_name_indicator():
     translate._PROPER_NOUN_NEologISMS = {}  # no neologism registered
-    translate._UNICODE_MAP = {"15691": "\U00016363"}  # name indicator
+    # name indicator + the real Bliss letter glyphs for "Lory"
+    translate._UNICODE_MAP = {
+        "15691": "\U00016363",
+        "8532": "\U00032902",  # letter l (8521 + 11; lemma arrives lowercased)
+        "8535": "\U00032906",  # letter o (8521 + 14)
+        "8538": "\U00032911",  # letter r (8521 + 17)
+        "8545": "\U00032919",  # letter y (8521 + 24)
+    }
     out = translate.translate_token(LEXICON, INDEX, WSD, "Lory", _tok("Lory", "lory", "PROPN"))
     assert out["type"] == "Transliteration"
     assert out["review"] is True
     assert out["unicode"].startswith("\U00016363")  # wrapped in name indicator
-    assert "lory" in out["unicode"]
+    # ...and the spelling uses Bliss letter glyphs, not raw Latin
+    assert "Lory" not in out["unicode"] and "lory" not in out["unicode"]
+    assert "\U00032902" in out["unicode"]
 
 
 # --- T-603: reviewer correction parsing -----------------------------------
