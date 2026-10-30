@@ -27,6 +27,7 @@ REVIEW_COLUMNS = [
     "pos_category",
     "draft_gloss",
     "draft_unicode",
+    "bci_explanation",     # Blissary prose "why" — reviewer context (CC-BY-SA)
     "review_reason",
     "reviewer_decision",   # approve / flag / reject (filled by humans)
     "reviewer_correction",
@@ -34,10 +35,25 @@ REVIEW_COLUMNS = [
 ]
 
 
+def load_explanations() -> dict[str, str]:
+    """bci_id -> Blissary explanation, from the BlissFont JSON (merged by
+    merge_blissary_explanations.py). Missing file/keys degrade gracefully."""
+    path = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "..", "..", "BlissFont",
+        "data", "processed", "bliss_character_data.json"))
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        records = json.load(f)
+    return {r["bci_id"]: r["explanation_blissary"]
+            for r in records if r.get("explanation_blissary")}
+
+
 def main() -> None:
     if not os.path.exists(TRANSLATED_PATH):
         raise SystemExit(f"Missing {TRANSLATED_PATH}. Run translate.py first.")
     os.makedirs(PROC_DIR, exist_ok=True)
+    explain = load_explanations()
 
     rows = []
     with open(TRANSLATED_PATH, "r", encoding="utf-8") as f:
@@ -54,6 +70,7 @@ def main() -> None:
                         "pos_category": tok["type"],
                         "draft_gloss": tok["gloss"],
                         "draft_unicode": tok["unicode"],
+                        "bci_explanation": explain.get(tok.get("bci_id") or "", ""),
                         "review_reason": tok.get("review_reason") or "",
                         "reviewer_decision": "FLAG" if tok.get("review") else "",
                         "reviewer_correction": "",
